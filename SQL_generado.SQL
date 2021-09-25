@@ -1,4 +1,4 @@
-﻿/*
+/*
 Created: 20/08/2021
 Modified: 24/09/2021
 Model: Punto_Venta
@@ -939,13 +939,13 @@ ON PV_COMPANIA FOR EACH ROW
 BEGIN
   :new.emp_id := Sec_compania.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_COMPANIA_Sec_compania AFTER UPDATE OF emp_id
 ON PV_COMPANIA FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column emp_id in table PV_COMPANIA as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_sedes for column sed_id in table PV_SEDES ---------
 CREATE OR REPLACE TRIGGER ts_PV_SEDES_Sec_sedes BEFORE INSERT
@@ -953,13 +953,13 @@ ON PV_SEDES FOR EACH ROW
 BEGIN
   :new.sed_id := Sec_sedes.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_SEDES_Sec_sedes AFTER UPDATE OF sed_id
 ON PV_SEDES FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column sed_id in table PV_SEDES as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_inventarios for column inv_id in table PV_INVENTARIOS ---------
 CREATE OR REPLACE TRIGGER ts_PV_INVENTARIOS_Sec_inventarios BEFORE INSERT
@@ -967,13 +967,13 @@ ON PV_INVENTARIOS FOR EACH ROW
 BEGIN
   :new.inv_id := Sec_inventarios.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_INVENTARIOS_Sec_inventarios AFTER UPDATE OF inv_id
 ON PV_INVENTARIOS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column inv_id in table PV_INVENTARIOS as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_productos for column pro_id in table PV_PRODUCTOS ---------
 CREATE OR REPLACE TRIGGER ts_PV_PRODUCTOS_Sec_productos BEFORE INSERT
@@ -981,13 +981,13 @@ ON PV_PRODUCTOS FOR EACH ROW
 BEGIN
   :new.pro_id := Sec_productos.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_PRODUCTOS_Sec_productos AFTER UPDATE OF pro_id
 ON PV_PRODUCTOS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column pro_id in table PV_PRODUCTOS as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_proveedores for column pro_id in table PV_PROVEEDORES ---------
 CREATE OR REPLACE TRIGGER ts_PV_PROVEEDORES_Sec_proveedores BEFORE INSERT
@@ -995,13 +995,13 @@ ON PV_PROVEEDORES FOR EACH ROW
 BEGIN
   :new.pro_id := Sec_proveedores.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_PROVEEDORES_Sec_proveedores AFTER UPDATE OF pro_id
 ON PV_PROVEEDORES FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column pro_id in table PV_PROVEEDORES as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_familias for column fam_id in table PV_FAMILIAS ---------
 CREATE OR REPLACE TRIGGER ts_PV_FAMILIAS_Sec_familias BEFORE INSERT
@@ -1009,13 +1009,13 @@ ON PV_FAMILIAS FOR EACH ROW
 BEGIN
   :new.fam_id := Sec_familias.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_FAMILIAS_Sec_familias AFTER UPDATE OF fam_id
 ON PV_FAMILIAS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column fam_id in table PV_FAMILIAS as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_codigo_barras for column cod_id in table PV_CODIGOS_BARRAS ---------
 CREATE OR REPLACE TRIGGER ts_PV_CODIGOS_BARRAS_Sec_codigo_barras BEFORE INSERT
@@ -1023,13 +1023,13 @@ ON PV_CODIGOS_BARRAS FOR EACH ROW
 BEGIN
   :new.cod_id := Sec_codigo_barras.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_CODIGOS_BARRAS_Sec_codigo_barras AFTER UPDATE OF cod_id
 ON PV_CODIGOS_BARRAS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column cod_id in table PV_CODIGOS_BARRAS as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_facturas_compra for column fac_id in table PV_FACTURAS_COMPRA ---------
 CREATE OR REPLACE TRIGGER ts_PV_FACTURAS_COMPRA_Sec_facturas_compra BEFORE INSERT
@@ -1037,13 +1037,13 @@ ON PV_FACTURAS_COMPRA FOR EACH ROW
 BEGIN
   :new.fac_id := Sec_facturas_compra.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_FACTURAS_COMPRA_Sec_facturas_compra AFTER UPDATE OF fac_id
 ON PV_FACTURAS_COMPRA FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column fac_id in table PV_FACTURAS_COMPRA as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_abonos for column abo_id in table PV_ABONOS ---------
 CREATE OR REPLACE TRIGGER ts_PV_ABONOS_Sec_abonos BEFORE INSERT
@@ -1051,13 +1051,13 @@ ON PV_ABONOS FOR EACH ROW
 BEGIN
   :new.abo_id := Sec_abonos.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_ABONOS_Sec_abonos AFTER UPDATE OF abo_id
 ON PV_ABONOS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column abo_id in table PV_ABONOS as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_clientes for column cli_id in table PV_CLIENTES ---------
 CREATE OR REPLACE TRIGGER ts_PV_CLIENTES_Sec_clientes BEFORE INSERT
@@ -1065,13 +1065,13 @@ ON PV_CLIENTES FOR EACH ROW
 BEGIN
   :new.cli_id := Sec_clientes.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_CLIENTES_Sec_clientes AFTER UPDATE OF cli_id
 ON PV_CLIENTES FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column cli_id in table PV_CLIENTES as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_facturas_venta for column fac_codigo in table PV_FACTURAS_VENTA ---------
 CREATE OR REPLACE TRIGGER ts_PV_FACTURAS_VENTA_Sec_facturas_venta BEFORE INSERT
@@ -1079,13 +1079,13 @@ ON PV_FACTURAS_VENTA FOR EACH ROW
 BEGIN
   :new.fac_codigo := Sec_facturas_venta.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_FACTURAS_VENTA_Sec_facturas_venta AFTER UPDATE OF fac_codigo
 ON PV_FACTURAS_VENTA FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column fac_codigo in table PV_FACTURAS_VENTA as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_acciones for column acc_codigo in table PV_ACCIONES ---------
 CREATE OR REPLACE TRIGGER ts_PV_ACCIONES_Sec_acciones BEFORE INSERT
@@ -1093,13 +1093,13 @@ ON PV_ACCIONES FOR EACH ROW
 BEGIN
   :new.acc_codigo := Sec_acciones.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_ACCIONES_Sec_acciones AFTER UPDATE OF acc_codigo
 ON PV_ACCIONES FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column acc_codigo in table PV_ACCIONES as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_notas_credito for column not_id in table PV_NOTAS_CRED ---------
 CREATE OR REPLACE TRIGGER ts_PV_NOTAS_CRED_Sec_notas_credito BEFORE INSERT
@@ -1107,13 +1107,13 @@ ON PV_NOTAS_CRED FOR EACH ROW
 BEGIN
   :new.not_id := Sec_notas_credito.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_NOTAS_CRED_Sec_notas_credito AFTER UPDATE OF not_id
 ON PV_NOTAS_CRED FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column not_id in table PV_NOTAS_CRED as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_promociones for column pro_id in table PV_PROMOCIONES ---------
 CREATE OR REPLACE TRIGGER ts_PV_PROMOCIONES_Sec_promociones BEFORE INSERT
@@ -1121,13 +1121,13 @@ ON PV_PROMOCIONES FOR EACH ROW
 BEGIN
   :new.pro_id := Sec_promociones.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_PROMOCIONES_Sec_promociones AFTER UPDATE OF pro_id
 ON PV_PROMOCIONES FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column pro_id in table PV_PROMOCIONES as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_descuentos for column dec_id in table PV_DESCUENTOS ---------
 CREATE OR REPLACE TRIGGER ts_PV_DESCUENTOS_Sec_descuentos BEFORE INSERT
@@ -1135,13 +1135,13 @@ ON PV_DESCUENTOS FOR EACH ROW
 BEGIN
   :new.dec_id := Sec_descuentos.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_DESCUENTOS_Sec_descuentos AFTER UPDATE OF dec_id
 ON PV_DESCUENTOS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column dec_id in table PV_DESCUENTOS as it uses sequence.');
 END;
-;
+/
 
 -- Trigger for sequence Sec_tipo_promocion for column tip_id in table PV_TIPO_PROMOCION ---------
 CREATE OR REPLACE TRIGGER ts_PV_TIPO_PROMOCION_Sec_tipo_promocion BEFORE INSERT
@@ -1149,13 +1149,13 @@ ON PV_TIPO_PROMOCION FOR EACH ROW
 BEGIN
   :new.tip_id := Sec_tipo_promocion.nextval;
 END;
-;
+/
 CREATE OR REPLACE TRIGGER tsu_PV_TIPO_PROMOCION_Sec_tipo_promocion AFTER UPDATE OF tip_id
 ON PV_TIPO_PROMOCION FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column tip_id in table PV_TIPO_PROMOCION as it uses sequence.');
 END;
-;
+/
 
 
 -- Create foreign keys (relationships) section ------------------------------------------------- 

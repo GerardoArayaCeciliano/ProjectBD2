@@ -1,6 +1,6 @@
-/*
-Created: 20/08/2021
-Modified: 24/09/2021
+﻿/*
+Created: 20/8/2021
+Modified: 13/10/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -129,6 +129,30 @@ CREATE SEQUENCE Sec_facturas_compra
 ;
 
 CREATE SEQUENCE Sec_notas_credito
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_tipo_pago
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_movimiento
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_precio
  INCREMENT BY 1
  START WITH 1
  NOMAXVALUE
@@ -577,7 +601,7 @@ COMMENT ON COLUMN PV_CLIENTES.cli_estado IS 'Activo(A), Inactivo(I)'
 -- Table PV_FACTURAS_VENTA
 
 CREATE TABLE PV_FACTURAS_VENTA(
-  fac_codigo Number NOT NULL,
+  fac_id Number NOT NULL,
   fac_sede Number NOT NULL,
   fac_cliente Number NOT NULL,
   fac_fecha Date NOT NULL,
@@ -585,6 +609,7 @@ CREATE TABLE PV_FACTURAS_VENTA(
   fac_total Float NOT NULL,
   fac_tipo_pago Varchar2(10 ) NOT NULL,
   fac_estado Char(3 ) NOT NULL,
+  fac_codigo Varchar2(30 ) NOT NULL,
   CONSTRAINT facturas_ck_estado CHECK (fac_estado in ('C','P','I')),
   CONSTRAINT facturas_ck_tipo_pago CHECK (fac_tipo_pago in ('EFECTIVO','SINPE','TARJETA'))
 )
@@ -609,17 +634,21 @@ CREATE INDEX facturas_venta_idx_estado ON PV_FACTURAS_VENTA (fac_estado)
 
 -- Add keys for table PV_FACTURAS_VENTA
 
-ALTER TABLE PV_FACTURAS_VENTA ADD CONSTRAINT pk_facturas_venta PRIMARY KEY (fac_codigo)
+ALTER TABLE PV_FACTURAS_VENTA ADD CONSTRAINT pk_facturas_venta PRIMARY KEY (fac_id)
 ;
 
 -- Table and Columns comments section
 
 COMMENT ON TABLE PV_FACTURAS_VENTA IS 'Facturas de venta a clientes'
 ;
-COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_codigo IS 'id de factura'
+COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_id IS 'id de factura'
 ;
 COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_estado IS 'cancelada, pendiente, inactiva (en caso dedevolucion)
 (C,P, I)'
+;
+COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_codigo IS 'año+id 
+id=secuencia
+'
 ;
 
 -- Table PV_DETALL_FAC_VENTA
@@ -627,10 +656,10 @@ COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_estado IS 'cancelada, pendiente, inactiv
 CREATE TABLE PV_DETALL_FAC_VENTA(
   det_producto Number NOT NULL,
   det_factura Number NOT NULL,
+  det_precio Number NOT NULL,
+  det_promocion Number,
   det_unidades Number NOT NULL,
-  det_costo_unidad Float NOT NULL,
   det_subtotal Float NOT NULL,
-  det_impuesto Float NOT NULL,
   det_descuento Float NOT NULL
 )
 ;
@@ -640,9 +669,12 @@ CREATE TABLE PV_DETALL_FAC_VENTA(
 CREATE INDEX detall_fac_venta ON PV_DETALL_FAC_VENTA (det_factura)
 ;
 
+CREATE INDEX IX_Relationship11 ON PV_DETALL_FAC_VENTA (det_promocion)
+;
+
 -- Add keys for table PV_DETALL_FAC_VENTA
 
-ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT pk_detall_fac_venta PRIMARY KEY (det_producto,det_factura)
+ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT pk_detall_fac_venta PRIMARY KEY (det_producto,det_factura,det_precio)
 ;
 
 -- Table and Columns comments section
@@ -891,7 +923,8 @@ COMMENT ON COLUMN PV_DESC_LIQUIDACION.des_estado IS 'A, I'
 
 CREATE TABLE PV_PRECIOS(
   pre_id Number NOT NULL,
-  pre_precio_costo Float NOT NULL,
+  pre_producto Number NOT NULL,
+  pre_precio_unitario Float NOT NULL,
   pre_impuesto Float NOT NULL,
   pre_utilidad Float NOT NULL,
   pre_fecha Date NOT NULL,
@@ -901,7 +934,7 @@ CREATE TABLE PV_PRECIOS(
 
 -- Create indexes for table PV_PRECIOS
 
-CREATE INDEX precio_idx_id ON PV_PRECIOS (pre_id)
+CREATE INDEX precio_idx_id ON PV_PRECIOS (pre_producto)
 ;
 
 CREATE INDEX precio_idx_fecha ON PV_PRECIOS (pre_fecha)
@@ -931,6 +964,87 @@ CREATE TABLE PV_TIPO_PROMOCION(
 -- Add keys for table PV_TIPO_PROMOCION
 
 ALTER TABLE PV_TIPO_PROMOCION ADD CONSTRAINT pk_tipo_promocion PRIMARY KEY (tip_id)
+;
+
+-- Table PV_MOVIMIENTOS
+
+CREATE TABLE PV_MOVIMIENTOS(
+  mov_id Number NOT NULL,
+  mov_producto Number NOT NULL,
+  mov_tipo Char(1 ) NOT NULL
+        CONSTRAINT movimientos_ck_tipo CHECK (mov_tipo in ('E','S')),
+  mov_fecha Date NOT NULL,
+  mov_descripcion Varchar2(128 ) NOT NULL,
+  mov_cantidad Number NOT NULL,
+  CONSTRAINT movimientos_ck_tipo01 CHECK (mov_tipo in ('E','S'))
+)
+;
+
+-- Create indexes for table PV_MOVIMIENTOS
+
+CREATE INDEX movimientos_producto ON PV_MOVIMIENTOS (mov_producto)
+;
+
+-- Add keys for table PV_MOVIMIENTOS
+
+ALTER TABLE PV_MOVIMIENTOS ADD CONSTRAINT PK_PV_MOVIMIENTOS PRIMARY KEY (mov_id)
+;
+
+-- Table and Columns comments section
+
+COMMENT ON COLUMN PV_MOVIMIENTOS.mov_tipo IS 'tipo de movimiento Entrada(E)/Salidad(S)'
+;
+COMMENT ON COLUMN PV_MOVIMIENTOS.mov_fecha IS 'Fecha de movimiento'
+;
+COMMENT ON COLUMN PV_MOVIMIENTOS.mov_descripcion IS 'Descripcion de movimiento'
+;
+COMMENT ON COLUMN PV_MOVIMIENTOS.mov_cantidad IS 'Numero de items movidos'
+;
+
+-- Table PV_Tipos_Pago
+
+CREATE TABLE PV_Tipos_Pago(
+  tip_id Number NOT NULL,
+  tip_nombre Varchar2(30 ) NOT NULL,
+  tip_descripcion Varchar2(128 )
+)
+;
+
+-- Add keys for table PV_Tipos_Pago
+
+ALTER TABLE PV_Tipos_Pago ADD CONSTRAINT PK_PV_Tipos_Pago PRIMARY KEY (tip_id)
+;
+
+ALTER TABLE PV_Tipos_Pago ADD CONSTRAINT tp_nombre UNIQUE (tip_nombre)
+;
+
+-- Table and Columns comments section
+
+COMMENT ON COLUMN PV_Tipos_Pago.tip_nombre IS 'Nombre del tipo de pago'
+;
+
+-- Table PV_PAGO_FACTURA
+
+CREATE TABLE PV_PAGO_FACTURA(
+  pag_factura Number NOT NULL,
+  pag_tipo_pago Number NOT NULL,
+  pag_monto_cancelado Float NOT NULL,
+  pag_monto_cambio Float,
+  CONSTRAINT pago_factura_ck_monto_cancelado CHECK (pag_monto_cancelado >=0)
+)
+;
+
+-- Create indexes for table PV_PAGO_FACTURA
+
+CREATE INDEX pago_factura_idx_factura ON PV_PAGO_FACTURA (pag_factura)
+;
+
+CREATE INDEX pago_factura_idx_tipo_pago ON PV_PAGO_FACTURA (pag_tipo_pago)
+;
+
+-- Add keys for table PV_PAGO_FACTURA
+
+ALTER TABLE PV_PAGO_FACTURA ADD CONSTRAINT PK_PV_PAGO_FACTURA PRIMARY KEY (pag_factura,pag_tipo_pago)
 ;
 
 -- Trigger for sequence Sec_compania for column emp_id in table PV_COMPANIA ---------
@@ -1073,17 +1187,17 @@ BEGIN
 END;
 /
 
--- Trigger for sequence Sec_facturas_venta for column fac_codigo in table PV_FACTURAS_VENTA ---------
+-- Trigger for sequence Sec_facturas_venta for column fac_id in table PV_FACTURAS_VENTA ---------
 CREATE OR REPLACE TRIGGER ts_PV_FACTURAS_VENTA_Sec_facturas_venta BEFORE INSERT
 ON PV_FACTURAS_VENTA FOR EACH ROW
 BEGIN
-  :new.fac_codigo := Sec_facturas_venta.nextval;
+  :new.fac_id := Sec_facturas_venta.nextval;
 END;
 /
-CREATE OR REPLACE TRIGGER tsu_PV_FACTURAS_VENTA_Sec_facturas_venta AFTER UPDATE OF fac_codigo
+CREATE OR REPLACE TRIGGER tsu_PV_FACTURAS_VENTA_Sec_facturas_venta AFTER UPDATE OF fac_id
 ON PV_FACTURAS_VENTA FOR EACH ROW
 BEGIN
-  RAISE_APPLICATION_ERROR(-20010,'Cannot update column fac_codigo in table PV_FACTURAS_VENTA as it uses sequence.');
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column fac_id in table PV_FACTURAS_VENTA as it uses sequence.');
 END;
 /
 
@@ -1143,6 +1257,20 @@ BEGIN
 END;
 /
 
+-- Trigger for sequence Sec_precio for column pre_id in table PV_PRECIOS ---------
+CREATE OR REPLACE TRIGGER ts_PV_PRECIOS_Sec_precio BEFORE INSERT
+ON PV_PRECIOS FOR EACH ROW
+BEGIN
+  :new.pre_id := Sec_precio.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_PRECIOS_Sec_precio AFTER UPDATE OF pre_id
+ON PV_PRECIOS FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column pre_id in table PV_PRECIOS as it uses sequence.');
+END;
+/
+
 -- Trigger for sequence Sec_tipo_promocion for column tip_id in table PV_TIPO_PROMOCION ---------
 CREATE OR REPLACE TRIGGER ts_PV_TIPO_PROMOCION_Sec_tipo_promocion BEFORE INSERT
 ON PV_TIPO_PROMOCION FOR EACH ROW
@@ -1154,6 +1282,34 @@ CREATE OR REPLACE TRIGGER tsu_PV_TIPO_PROMOCION_Sec_tipo_promocion AFTER UPDATE 
 ON PV_TIPO_PROMOCION FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column tip_id in table PV_TIPO_PROMOCION as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_movimiento for column mov_id in table PV_MOVIMIENTOS ---------
+CREATE OR REPLACE TRIGGER ts_PV_MOVIMIENTOS_Sec_movimiento BEFORE INSERT
+ON PV_MOVIMIENTOS FOR EACH ROW
+BEGIN
+  :new.mov_id := Sec_movimiento.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_MOVIMIENTOS_Sec_movimiento AFTER UPDATE OF mov_id
+ON PV_MOVIMIENTOS FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column mov_id in table PV_MOVIMIENTOS as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_tipo_pago for column tip_id in table PV_Tipos_Pago ---------
+CREATE OR REPLACE TRIGGER ts_PV_Tipos_Pago_Sec_tipo_pago BEFORE INSERT
+ON PV_Tipos_Pago FOR EACH ROW
+BEGIN
+  :new.tip_id := Sec_tipo_pago.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_Tipos_Pago_Sec_tipo_pago AFTER UPDATE OF tip_id
+ON PV_Tipos_Pago FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column tip_id in table PV_Tipos_Pago as it uses sequence.');
 END;
 /
 
@@ -1235,7 +1391,7 @@ ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT productos_detall_fac_venta FOREIG
 
 
 
-ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT facturas_venta_detall_fac_venta FOREIGN KEY (det_factura) REFERENCES PV_FACTURAS_VENTA (fac_codigo)
+ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT facturas_venta_detall_fac_venta FOREIGN KEY (det_factura) REFERENCES PV_FACTURAS_VENTA (fac_id)
 ;
 
 
@@ -1300,7 +1456,7 @@ ALTER TABLE PV_DESC_LIQUIDACION ADD CONSTRAINT descuentos_des_liquidacion FOREIG
 
 
 
-ALTER TABLE PV_PRECIOS ADD CONSTRAINT productos_precios FOREIGN KEY (pre_id) REFERENCES PV_PRODUCTOS (pro_id)
+ALTER TABLE PV_PRECIOS ADD CONSTRAINT productos_precios FOREIGN KEY (pre_producto) REFERENCES PV_PRODUCTOS (pro_id)
 ;
 
 
@@ -1311,6 +1467,31 @@ ALTER TABLE PV_PROMOCIONES ADD CONSTRAINT promociones_tipo_promocion FOREIGN KEY
 
 
 ALTER TABLE PV_INVENTARIOS ADD CONSTRAINT inventarios_sedes FOREIGN KEY (inv_sede) REFERENCES PV_SEDES (sed_id)
+;
+
+
+
+ALTER TABLE PV_MOVIMIENTOS ADD CONSTRAINT movimientos_productos FOREIGN KEY (mov_producto) REFERENCES PV_PRODUCTOS (pro_id)
+;
+
+
+
+ALTER TABLE PV_PAGO_FACTURA ADD CONSTRAINT factura_venta_pago FOREIGN KEY (pag_factura) REFERENCES PV_FACTURAS_VENTA (fac_id)
+;
+
+
+
+ALTER TABLE PV_PAGO_FACTURA ADD CONSTRAINT tipo_pago_factura FOREIGN KEY (pag_tipo_pago) REFERENCES PV_Tipos_Pago (tip_id)
+;
+
+
+
+ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT precio_detall_fac_venta FOREIGN KEY (det_precio) REFERENCES PV_PRECIOS (pre_id)
+;
+
+
+
+ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT promociones_det_factura_venta FOREIGN KEY (det_promocion) REFERENCES PV_PROMOCIONES (pro_id)
 ;
 
 

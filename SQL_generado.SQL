@@ -160,6 +160,22 @@ CREATE SEQUENCE Sec_precio
  CACHE 20
 ;
 
+CREATE SEQUENCE Sec_cuentas_cobrar
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_cuentas_pagar
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
 -- Create tables section -------------------------------------------------
 
 -- Table PV_COMPANIA
@@ -414,7 +430,7 @@ COMMENT ON TABLE PV_FACTURAS_COMPRA IS 'Facturas de compra por parte de la empre
 ;
 COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_tipo IS 'A plazo o a contado.(CON, PLA)'
 ;
-COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_estado IS 'Si esta cancelada, pediente o fue reemplazada debido a debolucion (P, I, C)'
+COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_estado IS 'Si esta cancelada, pediente o fue inactivada debido a debolucion (P, I, C)'
 ;
 
 -- Table PV_DETALL_FAC_COMPRA
@@ -446,15 +462,16 @@ COMMENT ON TABLE PV_DETALL_FAC_COMPRA IS 'Detalles de facturas de compra de la e
 
 CREATE TABLE PV_ABONOS(
   abo_id Number NOT NULL,
-  abo_factura Number NOT NULL,
+  abo_cuentas_pagar Number,
   abo_monto Float NOT NULL,
+  abo_fecha_abono Date NOT NULL,
   CONSTRAINT abonos_ck_monto CHECK (abo_monto > 0)
 )
 ;
 
 -- Create indexes for table PV_ABONOS
 
-CREATE INDEX abonos_idx_factura ON PV_ABONOS (abo_factura)
+CREATE INDEX IX_Relationship7 ON PV_ABONOS (abo_cuentas_pagar)
 ;
 
 -- Add keys for table PV_ABONOS
@@ -497,9 +514,9 @@ CREATE TABLE PV_CLIENTES(
   cli_nombre Varchar2(64 ) NOT NULL,
   cli_p_apellido Varchar2(62 ),
   cli_s_apellido Varchar2(32 ),
-  cli_fax Varchar2(24 ) NOT NULL,
-  cli_telefono Varchar2(24 ) NOT NULL,
-  cli_email Varchar2(64 ) NOT NULL,
+  cli_fax Varchar2(24 ),
+  cli_telefono Varchar2(24 ),
+  cli_email Varchar2(64 ),
   cli_sexo Char(1 ),
   cli_estado_civ Varchar2(20 ),
   cli_preferencial Char(1 ) NOT NULL,
@@ -554,15 +571,6 @@ ALTER TABLE PV_CLIENTES ADD CONSTRAINT unique_folio_clientes UNIQUE (cli_folio)
 ;
 
 ALTER TABLE PV_CLIENTES ADD CONSTRAINT unique_identificacion_clientes UNIQUE (cli_identificacion)
-;
-
-ALTER TABLE PV_CLIENTES ADD CONSTRAINT unique_fax_clientes UNIQUE (cli_fax)
-;
-
-ALTER TABLE PV_CLIENTES ADD CONSTRAINT unique_telefono_clientes UNIQUE (cli_telefono)
-;
-
-ALTER TABLE PV_CLIENTES ADD CONSTRAINT unique_email_clientes UNIQUE (cli_email)
 ;
 
 -- Table and Columns comments section
@@ -1047,6 +1055,48 @@ CREATE INDEX pago_factura_idx_tipo_pago ON PV_PAGO_FACTURA (pag_tipo_pago)
 ALTER TABLE PV_PAGO_FACTURA ADD CONSTRAINT PK_PV_PAGO_FACTURA PRIMARY KEY (pag_factura,pag_tipo_pago)
 ;
 
+-- Table PV_CUENTAS_COBRAR
+
+CREATE TABLE PV_CUENTAS_COBRAR(
+  cue_id Number NOT NULL,
+  cue_cliente Number NOT NULL,
+  cue_saldo_pendiente Float NOT NULL
+)
+;
+
+-- Create indexes for table PV_CUENTAS_COBRAR
+
+CREATE INDEX IX_Relationship2 ON PV_CUENTAS_COBRAR (cue_cliente)
+;
+
+-- Add keys for table PV_CUENTAS_COBRAR
+
+ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT PK_PV_CUENTAS_COBRAR PRIMARY KEY (cue_id)
+;
+
+-- Table PEV_CUENTAS_PAGAR
+
+CREATE TABLE PEV_CUENTAS_PAGAR(
+  cue_id Number NOT NULL,
+  cue_proveedor Number NOT NULL,
+  cue_factura Number NOT NULL,
+  cue_monto Float NOT NULL
+)
+;
+
+-- Create indexes for table PEV_CUENTAS_PAGAR
+
+CREATE INDEX IX_Relationship5 ON PEV_CUENTAS_PAGAR (cue_proveedor)
+;
+
+CREATE INDEX IX_Relationship9 ON PEV_CUENTAS_PAGAR (cue_factura)
+;
+
+-- Add keys for table PEV_CUENTAS_PAGAR
+
+ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT PK_PEV_CUENTAS_PAGAR PRIMARY KEY (cue_id)
+;
+
 -- Trigger for sequence Sec_compania for column emp_id in table PV_COMPANIA ---------
 CREATE OR REPLACE TRIGGER ts_PV_COMPANIA_Sec_compania BEFORE INSERT
 ON PV_COMPANIA FOR EACH ROW
@@ -1313,6 +1363,34 @@ BEGIN
 END;
 /
 
+-- Trigger for sequence Sec_cuentas_cobrar for column cue_id in table PV_CUENTAS_COBRAR ---------
+CREATE OR REPLACE TRIGGER ts_PV_CUENTAS_COBRAR_Sec_cuentas_cobrar BEFORE INSERT
+ON PV_CUENTAS_COBRAR FOR EACH ROW
+BEGIN
+  :new.cue_id := Sec_cuentas_cobrar.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_CUENTAS_COBRAR_Sec_cuentas_cobrar AFTER UPDATE OF cue_id
+ON PV_CUENTAS_COBRAR FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column cue_id in table PV_CUENTAS_COBRAR as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_cuentas_pagar for column cue_id in table PEV_CUENTAS_PAGAR ---------
+CREATE OR REPLACE TRIGGER ts_PEV_CUENTAS_PAGAR_Sec_cuentas_pagar BEFORE INSERT
+ON PEV_CUENTAS_PAGAR FOR EACH ROW
+BEGIN
+  :new.cue_id := Sec_cuentas_pagar.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PEV_CUENTAS_PAGAR_Sec_cuentas_pagar AFTER UPDATE OF cue_id
+ON PEV_CUENTAS_PAGAR FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column cue_id in table PEV_CUENTAS_PAGAR as it uses sequence.');
+END;
+/
+
 
 -- Create foreign keys (relationships) section ------------------------------------------------- 
 
@@ -1357,11 +1435,6 @@ ALTER TABLE PV_DETALL_FAC_COMPRA ADD CONSTRAINT productos_detall_fac_compra FORE
 
 
 ALTER TABLE PV_FACTURAS_COMPRA ADD CONSTRAINT provedores_facturas_compra FOREIGN KEY (fac_provedor) REFERENCES PV_PROVEEDORES (pro_id)
-;
-
-
-
-ALTER TABLE PV_ABONOS ADD CONSTRAINT facturas_compra_abonos FOREIGN KEY (abo_factura) REFERENCES PV_FACTURAS_COMPRA (fac_id)
 ;
 
 
@@ -1492,6 +1565,26 @@ ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT precio_detall_fac_venta FOREIGN K
 
 
 ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT promociones_det_factura_venta FOREIGN KEY (det_promocion) REFERENCES PV_PROMOCIONES (pro_id)
+;
+
+
+
+ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT Relationship2 FOREIGN KEY (cue_cliente) REFERENCES PV_CLIENTES (cli_id)
+;
+
+
+
+ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT Relationship5 FOREIGN KEY (cue_proveedor) REFERENCES PV_PROVEEDORES (pro_id)
+;
+
+
+
+ALTER TABLE PV_ABONOS ADD CONSTRAINT Relationship7 FOREIGN KEY (abo_cuentas_pagar) REFERENCES PEV_CUENTAS_PAGAR (cue_id)
+;
+
+
+
+ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT Relationship9 FOREIGN KEY (cue_factura) REFERENCES PV_FACTURAS_COMPRA (fac_id)
 ;
 
 

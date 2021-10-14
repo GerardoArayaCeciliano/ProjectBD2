@@ -1,6 +1,6 @@
 /*
-Created: 20/8/2021
-Modified: 13/10/2021
+Created: 20/08/2021
+Modified: 14/10/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -169,6 +169,14 @@ CREATE SEQUENCE Sec_cuentas_cobrar
 ;
 
 CREATE SEQUENCE Sec_cuentas_pagar
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_abonos_venta
  INCREMENT BY 1
  START WITH 1
  NOMAXVALUE
@@ -462,16 +470,16 @@ COMMENT ON TABLE PV_DETALL_FAC_COMPRA IS 'Detalles de facturas de compra de la e
 
 CREATE TABLE PV_ABONOS(
   abo_id Number NOT NULL,
-  abo_cuentas_pagar Number,
   abo_monto Float NOT NULL,
   abo_fecha_abono Date NOT NULL,
+  fac_id Number,
   CONSTRAINT abonos_ck_monto CHECK (abo_monto > 0)
 )
 ;
 
 -- Create indexes for table PV_ABONOS
 
-CREATE INDEX IX_Relationship7 ON PV_ABONOS (abo_cuentas_pagar)
+CREATE INDEX IX_Relationship6 ON PV_ABONOS (fac_id)
 ;
 
 -- Add keys for table PV_ABONOS
@@ -654,7 +662,7 @@ COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_id IS 'id de factura'
 COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_estado IS 'cancelada, pendiente, inactiva (en caso dedevolucion)
 (C,P, I)'
 ;
-COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_codigo IS 'aÃ±o+id 
+COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_codigo IS 'año+id 
 id=secuencia
 '
 ;
@@ -957,7 +965,7 @@ ALTER TABLE PV_PRECIOS ADD CONSTRAINT pk_precios PRIMARY KEY (pre_id)
 
 COMMENT ON TABLE PV_PRECIOS IS 'Precios aplicados a productos'
 ;
-COMMENT ON COLUMN PV_PRECIOS.pre_fecha IS 'Fecha en que empezÃ³ a regir'
+COMMENT ON COLUMN PV_PRECIOS.pre_fecha IS 'Fecha en que empezó a regir'
 ;
 
 -- Table PV_TIPO_PROMOCION
@@ -1079,7 +1087,6 @@ ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT PK_PV_CUENTAS_COBRAR PRIMARY KEY (c
 CREATE TABLE PEV_CUENTAS_PAGAR(
   cue_id Number NOT NULL,
   cue_proveedor Number NOT NULL,
-  cue_factura Number NOT NULL,
   cue_monto Float NOT NULL
 )
 ;
@@ -1089,12 +1096,29 @@ CREATE TABLE PEV_CUENTAS_PAGAR(
 CREATE INDEX IX_Relationship5 ON PEV_CUENTAS_PAGAR (cue_proveedor)
 ;
 
-CREATE INDEX IX_Relationship9 ON PEV_CUENTAS_PAGAR (cue_factura)
-;
-
 -- Add keys for table PEV_CUENTAS_PAGAR
 
 ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT PK_PEV_CUENTAS_PAGAR PRIMARY KEY (cue_id)
+;
+
+-- Table PV_ABONOS_VENTAS
+
+CREATE TABLE PV_ABONOS_VENTAS(
+  abov_id Number NOT NULL,
+  abov_monto Float NOT NULL,
+  abov_fecha_abono Date NOT NULL,
+  fac_id Number
+)
+;
+
+-- Create indexes for table PV_ABONOS_VENTAS
+
+CREATE INDEX IX_Relationship7 ON PV_ABONOS_VENTAS (fac_id)
+;
+
+-- Add keys for table PV_ABONOS_VENTAS
+
+ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT PK_PV_ABONOS_VENTAS PRIMARY KEY (abov_id)
 ;
 
 -- Trigger for sequence Sec_compania for column emp_id in table PV_COMPANIA ---------
@@ -1391,6 +1415,20 @@ BEGIN
 END;
 /
 
+-- Trigger for sequence Sec_abonos_venta for column abov_id in table PV_ABONOS_VENTAS ---------
+CREATE OR REPLACE TRIGGER ts_PV_ABONOS_VENTAS_Sec_abonos_venta BEFORE INSERT
+ON PV_ABONOS_VENTAS FOR EACH ROW
+BEGIN
+  :new.abov_id := Sec_abonos_venta.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_ABONOS_VENTAS_Sec_abonos_venta AFTER UPDATE OF abov_id
+ON PV_ABONOS_VENTAS FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column abov_id in table PV_ABONOS_VENTAS as it uses sequence.');
+END;
+/
+
 
 -- Create foreign keys (relationships) section ------------------------------------------------- 
 
@@ -1569,35 +1607,35 @@ ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT promociones_det_factura_venta FOR
 
 
 
-ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT Relationship2 FOREIGN KEY (cue_cliente) REFERENCES PV_CLIENTES (cli_id)
+ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT cuentas_cobrar_clientes FOREIGN KEY (cue_cliente) REFERENCES PV_CLIENTES (cli_id)
 ;
 
 
 
-ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT Relationship5 FOREIGN KEY (cue_proveedor) REFERENCES PV_PROVEEDORES (pro_id)
+ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT cuentas_pagar_proveedor FOREIGN KEY (cue_proveedor) REFERENCES PV_PROVEEDORES (pro_id)
 ;
 
 
 
-ALTER TABLE PV_ABONOS ADD CONSTRAINT Relationship7 FOREIGN KEY (abo_cuentas_pagar) REFERENCES PEV_CUENTAS_PAGAR (cue_id)
+ALTER TABLE PV_ABONOS ADD CONSTRAINT abonos_factura_compra FOREIGN KEY (fac_id) REFERENCES PV_FACTURAS_COMPRA (fac_id)
 ;
 
 
 
-ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT Relationship9 FOREIGN KEY (cue_factura) REFERENCES PV_FACTURAS_COMPRA (fac_id)
+ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT abonos_facturas_venta FOREIGN KEY (fac_id) REFERENCES PV_FACTURAS_VENTA (fac_id)
 ;
 
 
--- Trigger de punto numero 1 (Aumentar saldo del cliente) ---------
-create or replace trigger TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE
+--Trigger #1  Aumentar saldo pendiente del cliente--
+create or replace noneditionable trigger TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE
   after insert
-  on pv_facturas_venta 
+  on pv_facturas_venta
   for each row
 declare
   cuentaUsuario number;
 begin
   select c.cue_id into cuentaUsuario from PV_CUENTAS_COBRAR c where c.cue_cliente = :new.fac_cliente;
-  
+
   begin
     if(:new.fac_estado = 'P') then
       update PV_CUENTAS_COBRAR c
@@ -1607,4 +1645,6 @@ begin
   end;
 end TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE;
 /
+
+
 

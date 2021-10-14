@@ -1,4 +1,4 @@
-﻿/*
+/*
 Created: 20/8/2021
 Modified: 13/10/2021
 Model: Punto_Venta
@@ -1588,6 +1588,23 @@ ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT Relationship9 FOREIGN KEY (cue_fact
 ;
 
 
-
-
+-- Trigger de punto numero 1 (Aumentar saldo del cliente) ---------
+create or replace trigger TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE
+  after insert
+  on pv_facturas_venta 
+  for each row
+declare
+  cuentaUsuario number;
+begin
+  select c.cue_id into cuentaUsuario from PV_CUENTAS_COBRAR c where c.cue_cliente = :new.fac_cliente;
+  
+  begin
+    if(:new.fac_estado = 'P') then
+      update PV_CUENTAS_COBRAR c
+      set c.CUE_SALDO_PENDIENTE = (c.CUE_SALDO_PENDIENTE + :new.fac_total)
+      where c.cue_id = cuentaUsuario;
+    end if;
+  end;
+end TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE;
+/
 

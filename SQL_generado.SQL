@@ -1626,7 +1626,8 @@ ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT abonos_facturas_venta FOREIGN KEY (f
 ;
 
 
---Trigger #1  Aumentar saldo pendiente del cliente--
+--Punto 1 Trigger aumentar saldo de la cuenta por cobrar del cliente --
+
 create or replace noneditionable trigger TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE
   after insert
   on pv_facturas_venta
@@ -1645,6 +1646,4 @@ begin
   end;
 end TRI_AUMENTAR_SALDO_PENDIENTE_CLIENTE;
 /
-
-
 

@@ -1,6 +1,6 @@
-/*
+﻿/*
 Created: 20/08/2021
-Modified: 14/10/2021
+Modified: 19/10/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -184,6 +184,30 @@ CREATE SEQUENCE Sec_abonos_venta
  CACHE 20
 ;
 
+CREATE SEQUENCE Sec_contactos_notificacion
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_padron
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_biticora
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
 -- Create tables section -------------------------------------------------
 
 -- Table PV_COMPANIA
@@ -347,7 +371,8 @@ CREATE TABLE PV_FAMILIAS(
   fam_id Number NOT NULL,
   fam_nombre Varchar2(64 ) NOT NULL,
   fam_descripcion Varchar2(500 ),
-  fam_estado Char(1 ) NOT NULL
+  fam_estado Char(1 ) NOT NULL,
+  CONSTRAINT familias_ck_estado CHECK (fam_estado in ('A','I'))
 )
 ;
 
@@ -470,16 +495,16 @@ COMMENT ON TABLE PV_DETALL_FAC_COMPRA IS 'Detalles de facturas de compra de la e
 
 CREATE TABLE PV_ABONOS(
   abo_id Number NOT NULL,
+  abo_fac_id Number NOT NULL,
   abo_monto Float NOT NULL,
   abo_fecha_abono Date NOT NULL,
-  fac_id Number,
   CONSTRAINT abonos_ck_monto CHECK (abo_monto > 0)
 )
 ;
 
 -- Create indexes for table PV_ABONOS
 
-CREATE INDEX IX_Relationship6 ON PV_ABONOS (fac_id)
+CREATE INDEX IX_Relationship6 ON PV_ABONOS (abo_fac_id)
 ;
 
 -- Add keys for table PV_ABONOS
@@ -662,7 +687,7 @@ COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_id IS 'id de factura'
 COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_estado IS 'cancelada, pendiente, inactiva (en caso dedevolucion)
 (C,P, I)'
 ;
-COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_codigo IS 'a�o+id 
+COMMENT ON COLUMN PV_FACTURAS_VENTA.fac_codigo IS 'año+id 
 id=secuencia
 '
 ;
@@ -940,11 +965,13 @@ COMMENT ON COLUMN PV_DESC_LIQUIDACION.des_estado IS 'A, I'
 CREATE TABLE PV_PRECIOS(
   pre_id Number NOT NULL,
   pre_producto Number NOT NULL,
-  pre_precio_unitario Float NOT NULL,
+  pre_precio_costo Float NOT NULL,
   pre_impuesto Float NOT NULL,
   pre_utilidad Float NOT NULL,
   pre_fecha Date NOT NULL,
-  CONSTRAINT precios_ck_impuestos CHECK (pre_impuesto >= 0)
+  pre_estado Varchar2(3 ) NOT NULL,
+  CONSTRAINT precios_ck_impuestos CHECK (pre_impuesto >= 0),
+  CONSTRAINT precios_ck_estado CHECK (pre_estado in ('ACT','ANT'))
 )
 ;
 
@@ -956,6 +983,9 @@ CREATE INDEX precio_idx_id ON PV_PRECIOS (pre_producto)
 CREATE INDEX precio_idx_fecha ON PV_PRECIOS (pre_fecha)
 ;
 
+CREATE INDEX estado_idx_estado ON PV_PRECIOS (pre_estado)
+;
+
 -- Add keys for table PV_PRECIOS
 
 ALTER TABLE PV_PRECIOS ADD CONSTRAINT pk_precios PRIMARY KEY (pre_id)
@@ -965,7 +995,9 @@ ALTER TABLE PV_PRECIOS ADD CONSTRAINT pk_precios PRIMARY KEY (pre_id)
 
 COMMENT ON TABLE PV_PRECIOS IS 'Precios aplicados a productos'
 ;
-COMMENT ON COLUMN PV_PRECIOS.pre_fecha IS 'Fecha en que empez� a regir'
+COMMENT ON COLUMN PV_PRECIOS.pre_fecha IS 'Fecha en que empezó a regir'
+;
+COMMENT ON COLUMN PV_PRECIOS.pre_estado IS 'Actual(ACT), Anterior(ANT)'
 ;
 
 -- Table PV_TIPO_PROMOCION
@@ -1082,43 +1114,120 @@ CREATE INDEX IX_Relationship2 ON PV_CUENTAS_COBRAR (cue_cliente)
 ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT PK_PV_CUENTAS_COBRAR PRIMARY KEY (cue_id)
 ;
 
--- Table PEV_CUENTAS_PAGAR
+-- Table PV_CUENTAS_PAGAR
 
-CREATE TABLE PEV_CUENTAS_PAGAR(
+CREATE TABLE PV_CUENTAS_PAGAR(
   cue_id Number NOT NULL,
   cue_proveedor Number NOT NULL,
   cue_monto Float NOT NULL
 )
 ;
 
--- Create indexes for table PEV_CUENTAS_PAGAR
+-- Create indexes for table PV_CUENTAS_PAGAR
 
-CREATE INDEX IX_Relationship5 ON PEV_CUENTAS_PAGAR (cue_proveedor)
+CREATE INDEX IX_Relationship5 ON PV_CUENTAS_PAGAR (cue_proveedor)
 ;
 
--- Add keys for table PEV_CUENTAS_PAGAR
+-- Add keys for table PV_CUENTAS_PAGAR
 
-ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT PK_PEV_CUENTAS_PAGAR PRIMARY KEY (cue_id)
+ALTER TABLE PV_CUENTAS_PAGAR ADD CONSTRAINT PK_PV_CUENTAS_PAGAR PRIMARY KEY (cue_id)
 ;
 
 -- Table PV_ABONOS_VENTAS
 
 CREATE TABLE PV_ABONOS_VENTAS(
   abov_id Number NOT NULL,
+  abov_fac_id Number,
   abov_monto Float NOT NULL,
-  abov_fecha_abono Date NOT NULL,
-  fac_id Number
+  abov_fecha_abono Date NOT NULL
 )
 ;
 
 -- Create indexes for table PV_ABONOS_VENTAS
 
-CREATE INDEX IX_Relationship7 ON PV_ABONOS_VENTAS (fac_id)
+CREATE INDEX IX_Relationship7 ON PV_ABONOS_VENTAS (abov_fac_id)
 ;
 
 -- Add keys for table PV_ABONOS_VENTAS
 
 ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT PK_PV_ABONOS_VENTAS PRIMARY KEY (abov_id)
+;
+
+-- Table PV_CONTACTOS_NOTIFICACION
+
+CREATE TABLE PV_CONTACTOS_NOTIFICACION(
+  con_id Number NOT NULL,
+  con_nombre_completo Varchar2(128 ) NOT NULL,
+  con_puesto Varchar2(32 ) NOT NULL,
+  con_email Varchar2(64 ) NOT NULL,
+  con_estado Char(1 ) NOT NULL,
+  CONSTRAINT contactos_notificacion_ck_estado CHECK (con_estado in ('A','I'))
+)
+;
+
+-- Create indexes for table PV_CONTACTOS_NOTIFICACION
+
+CREATE INDEX contactos_notificacion_idx_puesto ON PV_CONTACTOS_NOTIFICACION (con_puesto)
+;
+
+-- Add keys for table PV_CONTACTOS_NOTIFICACION
+
+ALTER TABLE PV_CONTACTOS_NOTIFICACION ADD CONSTRAINT PK_PV_CONTACTOS_NOTIFICACION PRIMARY KEY (con_id)
+;
+
+ALTER TABLE PV_CONTACTOS_NOTIFICACION ADD CONSTRAINT con_email UNIQUE (con_email)
+;
+
+-- Table and Columns comments section
+
+COMMENT ON COLUMN PV_CONTACTOS_NOTIFICACION.con_estado IS 'Activo (A), Inactivo(I)'
+;
+
+-- Table PV_PADRON
+
+CREATE TABLE PV_PADRON(
+  pad_id Number NOT NULL,
+  pad_nombre Varchar2(64 ) NOT NULL,
+  pad_apellidos1 Varchar2(32 ) NOT NULL,
+  pad_apellidos2 Varchar2(32 ),
+  pad_cedula Varchar2(32 ) NOT NULL
+)
+;
+
+-- Add keys for table PV_PADRON
+
+ALTER TABLE PV_PADRON ADD CONSTRAINT PK_PV_PADRON PRIMARY KEY (pad_id)
+;
+
+-- Table PV_BITACORA
+
+CREATE TABLE PV_BITACORA(
+  bit_id Number NOT NULL,
+  bit_tipo_accion Varchar2(10 ) NOT NULL,
+  bit_detalle Varchar2(512 ) NOT NULL,
+  bit_usuario Varchar2(128 ) NOT NULL,
+  bit_fecha Date NOT NULL,
+  CONSTRAINT bitacora_ck_tipo_accion CHECK (bit_tipo_accion in ('INSERTAR', 'MODIFICAR'))
+)
+;
+
+-- Create indexes for table PV_BITACORA
+
+CREATE INDEX bitacora_idx_tipo_accion ON PV_BITACORA (bit_tipo_accion)
+;
+
+-- Add keys for table PV_BITACORA
+
+ALTER TABLE PV_BITACORA ADD CONSTRAINT PK_PV_BITACORA PRIMARY KEY (bit_id)
+;
+
+-- Table and Columns comments section
+
+COMMENT ON COLUMN PV_BITACORA.bit_tipo_accion IS '''INSERTAR'', ''MODIFICAR'''
+;
+COMMENT ON COLUMN PV_BITACORA.bit_detalle IS 'Detalles del evento'
+;
+COMMENT ON COLUMN PV_BITACORA.bit_usuario IS 'Usuario que realiza la accion'
 ;
 
 -- Trigger for sequence Sec_compania for column emp_id in table PV_COMPANIA ---------
@@ -1401,17 +1510,17 @@ BEGIN
 END;
 /
 
--- Trigger for sequence Sec_cuentas_pagar for column cue_id in table PEV_CUENTAS_PAGAR ---------
-CREATE OR REPLACE TRIGGER ts_PEV_CUENTAS_PAGAR_Sec_cuentas_pagar BEFORE INSERT
-ON PEV_CUENTAS_PAGAR FOR EACH ROW
+-- Trigger for sequence Sec_cuentas_pagar for column cue_id in table PV_CUENTAS_PAGAR ---------
+CREATE OR REPLACE TRIGGER ts_PV_CUENTAS_PAGAR_Sec_cuentas_pagar BEFORE INSERT
+ON PV_CUENTAS_PAGAR FOR EACH ROW
 BEGIN
   :new.cue_id := Sec_cuentas_pagar.nextval;
 END;
 /
-CREATE OR REPLACE TRIGGER tsu_PEV_CUENTAS_PAGAR_Sec_cuentas_pagar AFTER UPDATE OF cue_id
-ON PEV_CUENTAS_PAGAR FOR EACH ROW
+CREATE OR REPLACE TRIGGER tsu_PV_CUENTAS_PAGAR_Sec_cuentas_pagar AFTER UPDATE OF cue_id
+ON PV_CUENTAS_PAGAR FOR EACH ROW
 BEGIN
-  RAISE_APPLICATION_ERROR(-20010,'Cannot update column cue_id in table PEV_CUENTAS_PAGAR as it uses sequence.');
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column cue_id in table PV_CUENTAS_PAGAR as it uses sequence.');
 END;
 /
 
@@ -1426,6 +1535,34 @@ CREATE OR REPLACE TRIGGER tsu_PV_ABONOS_VENTAS_Sec_abonos_venta AFTER UPDATE OF 
 ON PV_ABONOS_VENTAS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column abov_id in table PV_ABONOS_VENTAS as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_contactos_notificacion for column con_id in table PV_CONTACTOS_NOTIFICACION ---------
+CREATE OR REPLACE TRIGGER ts_PV_CONTACTOS_NOTIFICACION_Sec_contactos_notificacion BEFORE INSERT
+ON PV_CONTACTOS_NOTIFICACION FOR EACH ROW
+BEGIN
+  :new.con_id := Sec_contactos_notificacion.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_CONTACTOS_NOTIFICACION_Sec_contactos_notificacion AFTER UPDATE OF con_id
+ON PV_CONTACTOS_NOTIFICACION FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column con_id in table PV_CONTACTOS_NOTIFICACION as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_padron for column pad_id in table PV_PADRON ---------
+CREATE OR REPLACE TRIGGER ts_PV_PADRON_Sec_padron BEFORE INSERT
+ON PV_PADRON FOR EACH ROW
+BEGIN
+  :new.pad_id := Sec_padron.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_PADRON_Sec_padron AFTER UPDATE OF pad_id
+ON PV_PADRON FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column pad_id in table PV_PADRON as it uses sequence.');
 END;
 /
 
@@ -1612,18 +1749,19 @@ ALTER TABLE PV_CUENTAS_COBRAR ADD CONSTRAINT cuentas_cobrar_clientes FOREIGN KEY
 
 
 
-ALTER TABLE PEV_CUENTAS_PAGAR ADD CONSTRAINT cuentas_pagar_proveedor FOREIGN KEY (cue_proveedor) REFERENCES PV_PROVEEDORES (pro_id)
+ALTER TABLE PV_CUENTAS_PAGAR ADD CONSTRAINT cuentas_pagar_proveedor FOREIGN KEY (cue_proveedor) REFERENCES PV_PROVEEDORES (pro_id)
 ;
 
 
 
-ALTER TABLE PV_ABONOS ADD CONSTRAINT abonos_factura_compra FOREIGN KEY (fac_id) REFERENCES PV_FACTURAS_COMPRA (fac_id)
+ALTER TABLE PV_ABONOS ADD CONSTRAINT abonos_factura_compra FOREIGN KEY (abo_fac_id) REFERENCES PV_FACTURAS_COMPRA (fac_id)
 ;
 
 
 
-ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT abonos_facturas_venta FOREIGN KEY (fac_id) REFERENCES PV_FACTURAS_VENTA (fac_id)
+ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT abonos_facturas_venta FOREIGN KEY (abov_fac_id) REFERENCES PV_FACTURAS_VENTA (fac_id)
 ;
+
 
 
 

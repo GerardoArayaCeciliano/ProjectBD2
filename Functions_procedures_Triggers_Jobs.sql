@@ -180,7 +180,7 @@ end TRI_DISMINUIR_SALDO_CLIENTE;
 
 
 create or replace noneditionable trigger TRI_CANCELAR_MODIFICACION_PRECIOS
-  before update or delete
+  before update or delete of pre_precio_costo, pre_impuesto, pre_utilidad, pre_fecha
   on pv_precios 
   for each row
 declare
@@ -188,13 +188,13 @@ declare
 begin
   RAISE_APPLICATION_ERROR(-20010,'Editar o eliminar los precios no es una accion permitida');
 end TRY_CANCELAR_MODIFICACION_PRECIOS;
+/
+
 
 create or replace noneditionable trigger TRI_ACTUALIZAR_HISTORIAL_PRECIOS
 before insert on pv_precios
 for each row
 declare
-/
-
 
 begin
   --Desactiva todos los precios anteriores.
@@ -205,3 +205,4 @@ begin
      :new.pre_estado := 'ACT';
   end if;   
 end ACTUALIZAR_HISTORIAL_PRECIOS;
+/

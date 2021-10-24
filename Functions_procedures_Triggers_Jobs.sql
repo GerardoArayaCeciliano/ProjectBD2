@@ -208,21 +208,20 @@ end ACTUALIZAR_HISTORIAL_PRECIOS;
 /
 
 
-create or replace trigger TRI_LIMITAR_FACTURAS_COMPRA_PENDIENTES
+create or replace noneditionable trigger TRI_LIMITAR_FACTURAS_COMPRA_PENDIENTES
   before insert on pv_facturas_compra
   for each row
 declare
   limite_cred pv_limite_credito%rowtype;
-  acumulado_pediente float;
+  acumulado_pediente pv_cuentas_pagar.cue_monto%type;
 begin
   --ATENCION: Este disparador supone que la empresa cuenta con un limite de precio con cada proveedor.
+  --ATENCION: Este disparador supone que el proveedor cuenta con una cuenta por pagar activa.
   
-  if :new.fac_estado like 'P' then
+  if :new.fac_estado = 'P' then
     --Se obtiene limite de credito y acumulado aun pediente
     select * into limite_cred from pv_limite_credito lc where lc.lim_proveedor = :new.fac_provedor;
-    select sum(fc.fac_monto_total) into acumulado_pediente
-           from pv_facturas_compra fc
-           where fc.fac_provedor = :new.fac_provedor and fc.fac_estado like 'P';
+    select cp.cue_monto into acumulado_pediente from pv_cuentas_pagar cp where cp.cue_proveedor = :new.fac_provedor;
     --Se valida si rl acumulado mas la factura actual sobrepasan el limite de credito
     if (:new.fac_monto_total + acumulado_pediente) > limite_cred.lim_limite_max then
       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito con este proveedor.');
@@ -230,6 +229,31 @@ begin
   end if;
   
 end TRI_LIMITAR_FACTURAS_COMPRA_PENDIENTES;
+/
+
+
+create or replace noneditionable trigger TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES
+  before insert on pv_facturas_venta 
+  for each row
+declare
+  total_por_cobrar pv_cuentas_cobrar.cue_saldo_pendiente%type;
+  limite_pago pv_clientes.cli_cred_max%type;                       
+begin
+  --ATENCION: este disparador supone que ya el cliente cuenta con una cuenta por cobrar registrada
+  --Se lecciona el saldo pendiente y el credito maximo
+  if :new.fac_estado = 'P' then
+    
+    select cc.cue_saldo_pendiente into total_por_cobrar 
+    from pv_cuentas_cobrar cc where cc.cue_cliente = :new.fac_cliente;
+    
+    select c.cli_cred_max into limite_pago 
+    from pv_clientes c where c.cli_id = :new.fac_cliente;
+    
+    if (total_por_cobrar + :new.fac_total) > limite_pago then
+       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito del cliente.');
+    end if;
+  end if;
+end TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES;
 /
 
 

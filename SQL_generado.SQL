@@ -1,6 +1,6 @@
 ﻿/*
-Created: 20/08/2021
-Modified: 19/10/2021
+Created: 20/8/2021
+Modified: 27/10/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -201,6 +201,14 @@ CREATE SEQUENCE Sec_padron
 ;
 
 CREATE SEQUENCE Sec_biticora
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_parametros
  INCREMENT BY 1
  START WITH 1
  NOMAXVALUE
@@ -463,7 +471,7 @@ COMMENT ON TABLE PV_FACTURAS_COMPRA IS 'Facturas de compra por parte de la empre
 ;
 COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_tipo IS 'A plazo o a contado.(CON, PLA)'
 ;
-COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_estado IS 'Si esta cancelada, pediente o fue inactivada debido a debolucion (P, I, C)'
+COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_estado IS 'Si esta cancelada, pediente o fue inactivada debido a devolución(P, I, C)'
 ;
 
 -- Table PV_DETALL_FAC_COMPRA
@@ -1189,7 +1197,7 @@ CREATE TABLE PV_PADRON(
   pad_id Number NOT NULL,
   pad_nombre Varchar2(64 ) NOT NULL,
   pad_apellidos1 Varchar2(32 ) NOT NULL,
-  pad_apellidos2 Varchar2(32 ),
+  pad_apellidos2 Varchar2(32 ) NOT NULL,
   pad_cedula Varchar2(32 ) NOT NULL
 )
 ;
@@ -1203,7 +1211,8 @@ ALTER TABLE PV_PADRON ADD CONSTRAINT PK_PV_PADRON PRIMARY KEY (pad_id)
 
 CREATE TABLE PV_BITACORA(
   bit_id Number NOT NULL,
-  bit_tipo_accion Varchar2(10 ) NOT NULL,
+  bit_accion Varchar2(10 ) NOT NULL,
+  bit_tipo Varchar2(30 ) NOT NULL,
   bit_detalle Varchar2(512 ) NOT NULL,
   bit_usuario Varchar2(128 ) NOT NULL,
   bit_fecha Date NOT NULL,
@@ -1213,7 +1222,7 @@ CREATE TABLE PV_BITACORA(
 
 -- Create indexes for table PV_BITACORA
 
-CREATE INDEX bitacora_idx_tipo_accion ON PV_BITACORA (bit_tipo_accion)
+CREATE INDEX bitacora_idx_tipo_accion ON PV_BITACORA (bit_accion)
 ;
 
 -- Add keys for table PV_BITACORA
@@ -1223,11 +1232,30 @@ ALTER TABLE PV_BITACORA ADD CONSTRAINT PK_PV_BITACORA PRIMARY KEY (bit_id)
 
 -- Table and Columns comments section
 
-COMMENT ON COLUMN PV_BITACORA.bit_tipo_accion IS '''INSERTAR'', ''MODIFICAR'''
+COMMENT ON COLUMN PV_BITACORA.bit_accion IS '''INSERTAR'', ''MODIFICAR'''
+;
+COMMENT ON COLUMN PV_BITACORA.bit_tipo IS 'Clientes,productos,facturas,etc
+'
 ;
 COMMENT ON COLUMN PV_BITACORA.bit_detalle IS 'Detalles del evento'
 ;
 COMMENT ON COLUMN PV_BITACORA.bit_usuario IS 'Usuario que realiza la accion'
+;
+
+-- Table PV_PARAMETROS
+
+CREATE TABLE PV_PARAMETROS(
+  par_id Number NOT NULL,
+  par_contrasena Varchar2(160 ) NOT NULL,
+  par_usuario Varchar2(30 ),
+  par_estado Varchar2(1 ) NOT NULL
+        CONSTRAINT parametros_ck_estado CHECK (par_estado in ('A','I'))
+)
+;
+
+-- Add keys for table PV_PARAMETROS
+
+ALTER TABLE PV_PARAMETROS ADD CONSTRAINT PK_PV_PARAMETROS PRIMARY KEY (par_id)
 ;
 
 -- Trigger for sequence Sec_compania for column emp_id in table PV_COMPANIA ---------
@@ -1563,6 +1591,34 @@ CREATE OR REPLACE TRIGGER tsu_PV_PADRON_Sec_padron AFTER UPDATE OF pad_id
 ON PV_PADRON FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column pad_id in table PV_PADRON as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_biticora for column bit_id in table PV_BITACORA ---------
+CREATE OR REPLACE TRIGGER ts_PV_BITACORA_Sec_biticora BEFORE INSERT
+ON PV_BITACORA FOR EACH ROW
+BEGIN
+  :new.bit_id := Sec_biticora.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_BITACORA_Sec_biticora AFTER UPDATE OF bit_id
+ON PV_BITACORA FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column bit_id in table PV_BITACORA as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_parametros for column par_id in table PV_PARAMETROS ---------
+CREATE OR REPLACE TRIGGER ts_PV_PARAMETROS_Sec_parametros BEFORE INSERT
+ON PV_PARAMETROS FOR EACH ROW
+BEGIN
+  :new.par_id := Sec_parametros.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_PARAMETROS_Sec_parametros AFTER UPDATE OF par_id
+ON PV_PARAMETROS FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column par_id in table PV_PARAMETROS as it uses sequence.');
 END;
 /
 

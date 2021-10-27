@@ -257,3 +257,211 @@ end TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES;
 /
 
 
+create or replace trigger TRI_BITACORA_FACTURAS_COMPRA_INSERT
+  after insert
+  on pv_facturas_compra 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+  
+begin
+  
+  Select user into usuario from dual;
+
+  begin
+     case
+      when :new.fac_estado = 'P' then
+        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó factura de compra en estado pendiente de pago',usuario,sysdate);
+        commit;
+
+      when :new.fac_estado = 'C' then
+
+        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó factura de venta cancelada a contado',usuario,sysdate);
+        commit;
+
+
+     end case;
+  end;
+end TRI_BITACORA_FACTURAS_COMPRA_INSERT;
+/
+
+
+create or replace trigger TRI_BITACORA_FACTURAS_COMPRA_UPDATE
+  after update
+  on pv_facturas_compra 
+  for each row
+declare
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+
+    if :old.fac_estado = 'P' then
+      if :new.fac_estado = 'C' then
+        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó la factura de compra y ahora se encuantra cancelada',usuario,sysdate);
+        commit;
+      end if;
+
+    end if;
+
+    if :new.fac_estado = 'I' then
+      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó la factura de compra y su estado ahora es inactivo',usuario,sysdate);
+        commit;
+    end if;
+
+    if :old.fac_monto_total <> :new.fac_monto_total then
+       insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó el monto de la factura de compra',usuario,sysdate);
+        commit;
+    end if;
+
+
+  end;
+  
+end TRI_BITACORA_FACTURAS_COMPRA_UPDATE;
+/
+
+
+create or replace trigger TRI_BITACORA_FACTURAS_VENTA_INSERT
+  after insert
+  on pv_facturas_venta
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+    case
+      when :new.fac_estado = 'P' then
+        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó factura de venta en estado pendiente de pago',usuario,sysdate);
+        commit;
+
+      when :new.fac_estado = 'C' then
+
+        case
+          when :new.fac_tipo_pago = 'EFECTIVO' then
+          insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó factura de venta cancelada en efectivo',usuario,sysdate);
+               commit;
+
+          when :new.fac_tipo_pago = 'SINPE' then
+          insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó factura de venta cancelada por sinpe',usuario,sysdate);
+               commit;
+          when :new.fac_tipo_pago = 'TARJETA' then
+          insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó factura de venta cancelada en tarjeta',usuario,sysdate);
+               commit;
+
+        end case;
+
+
+    end case;
+  end;
+
+end TRI_BITACORA_FACTURAS_VENTA_INSERT;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORA_FACTURAS_VENTAS_UPDATE
+  after update
+  on pv_facturas_venta
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+
+    if :old.fac_estado = 'P' then
+      if :new.fac_estado = 'C' then
+        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó la factura de venta y ahora se encuantra cancelada',usuario,sysdate);
+        commit;
+      end if;
+
+    end if;
+
+    if :new.fac_estado = 'I' then
+      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó la factura de venta y su estado ahora es inactivo',usuario,sysdate);
+        commit;
+    end if;
+
+    if :old.fac_total <> :new.fac_total then
+       insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó el monto de la factura de venta',usuario,sysdate);
+        commit;
+    end if;
+
+    if ((:old.fac_sede <> :new.fac_sede) or (:old.fac_cliente <> :new.fac_cliente) or (:old.fac_fecha <> :new.fac_fecha) or (:old.fac_tipo_pago <> :new.fac_tipo_pago)) then
+      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Se modificó la factura de ventas ',usuario,sysdate);
+        commit;
+    end if;
+
+  end;
+
+end TRI_BITACORA_FACTURAS_VENTAS_UPDATE;
+/
+
+
+create or replace trigger TRI_BITACORA_PRECIOS
+  after insert
+  on pv_precios 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+    insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Se insertó un nuevo precio de un producto ',usuario,sysdate);
+        commit;
+  end;  
+
+end TRI_BITACORA_PRECIOS;
+/
+
+
+create or replace trigger TRI_BITACORA_PRECIOS_UPDATE
+  after update
+  on pv_precios 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+  
+begin
+  Select user into usuario from dual;
+  
+  begin
+    if (:new.pre_estado = 'ACT') then
+      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('MODIFICAR','Se insertó un nuevo precio del producto y el anterior ya no es válido',usuario,sysdate);
+        commit;
+    end if;
+    
+  end; 
+end TRI_BITACORA_PRECIOS_UPDATE;
+/
+

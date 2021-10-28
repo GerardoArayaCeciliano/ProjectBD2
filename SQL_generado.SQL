@@ -479,16 +479,18 @@ COMMENT ON COLUMN PV_FACTURAS_COMPRA.fac_estado IS 'Si esta cancelada, pediente 
 CREATE TABLE PV_DETALL_FAC_COMPRA(
   det_producto Number NOT NULL,
   det_factura Number NOT NULL,
+  det_notas_credito Number,
   det_cantidad Float NOT NULL,
-  det_precio_unidad Float NOT NULL,
-  det_devolucion Char(1 )
-        CONSTRAINT det_Fact_comp_ck_devolucion CHECK (det_devolucion in ('A','I'))
+  det_precio_unidad Float NOT NULL
 )
 ;
 
 -- Create indexes for table PV_DETALL_FAC_COMPRA
 
 CREATE INDEX detall_fac_compra ON PV_DETALL_FAC_COMPRA (det_factura)
+;
+
+CREATE INDEX IX_Relationship8 ON PV_DETALL_FAC_COMPRA (det_notas_credito)
 ;
 
 -- Add keys for table PV_DETALL_FAC_COMPRA
@@ -712,8 +714,7 @@ CREATE TABLE PV_DETALL_FAC_VENTA(
   det_unidades Number NOT NULL,
   det_subtotal Float NOT NULL,
   det_descuento Float NOT NULL,
-  det_devolucion Char(1 ) NOT NULL
-        CONSTRAINT detalle_factura_ck_devolucion CHECK (det_devolucion in ('A','I'))
+  det_nota_credito Number
 )
 ;
 
@@ -725,6 +726,9 @@ CREATE INDEX detall_fac_venta ON PV_DETALL_FAC_VENTA (det_factura)
 CREATE INDEX IX_Relationship11 ON PV_DETALL_FAC_VENTA (det_promocion)
 ;
 
+CREATE INDEX IX_Relationship7 ON PV_DETALL_FAC_VENTA (det_nota_credito)
+;
+
 -- Add keys for table PV_DETALL_FAC_VENTA
 
 ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT pk_detall_fac_venta PRIMARY KEY (det_producto,det_factura,det_precio)
@@ -733,6 +737,8 @@ ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT pk_detall_fac_venta PRIMARY KEY (
 -- Table and Columns comments section
 
 COMMENT ON TABLE PV_DETALL_FAC_VENTA IS 'Detalles de facturas de venta'
+;
+COMMENT ON COLUMN PV_DETALL_FAC_VENTA.det_nota_credito IS 'Nota de credito en el caso del producto sea devuelto '
 ;
 
 -- Table PV_ACCIONES
@@ -781,12 +787,22 @@ COMMENT ON COLUMN PV_ACCIONES.acc_estado IS 'Activo(A), Inactivo(I)'
 
 CREATE TABLE PV_NOTAS_CRED(
   not_id Number NOT NULL,
+  not_cliente Number,
+  not_empresa Number,
   not_monto Float NOT NULL,
   not_estado Char(1 ) NOT NULL,
   not_fecha_emision Date NOT NULL,
   CONSTRAINT notas_cred_ck_monto CHECK (not_monto > 0),
   CONSTRAINT notas_cred_ck_estado CHECK (not_estado in ('I','A'))
 )
+;
+
+-- Create indexes for table PV_NOTAS_CRED
+
+CREATE INDEX IX_Relationship3 ON PV_NOTAS_CRED (not_cliente)
+;
+
+CREATE INDEX IX_Relationship4 ON PV_NOTAS_CRED (not_empresa)
 ;
 
 -- Add keys for table PV_NOTAS_CRED
@@ -799,42 +815,6 @@ ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT pk_notas_cred PRIMARY KEY (not_id)
 COMMENT ON TABLE PV_NOTAS_CRED IS 'Notas crediticias para clientes y empresa'
 ;
 COMMENT ON COLUMN PV_NOTAS_CRED.not_estado IS 'I, A'
-;
-
--- Table PV_CLIEN_NOTA_CRD
-
-CREATE TABLE PV_CLIEN_NOTA_CRD(
-  cli_cliente Number NOT NULL,
-  cli_nota_crd Number NOT NULL
-)
-;
-
--- Create indexes for table PV_CLIEN_NOTA_CRD
-
-CREATE INDEX client_nota_crd_cliente ON PV_CLIEN_NOTA_CRD (cli_cliente)
-;
-
--- Add keys for table PV_CLIEN_NOTA_CRD
-
-ALTER TABLE PV_CLIEN_NOTA_CRD ADD CONSTRAINT pk_client_nota_cred PRIMARY KEY (cli_cliente,cli_nota_crd)
-;
-
--- Table and Columns comments section
-
-COMMENT ON TABLE PV_CLIEN_NOTA_CRD IS 'Notas crediticias asoacidas a los clientes'
-;
-
--- Table PV_EMPR_NOTA_CRD
-
-CREATE TABLE PV_EMPR_NOTA_CRD(
-  emp_empresa Number NOT NULL,
-  emp_nota_crd Number NOT NULL
-)
-;
-
--- Add keys for table PV_EMPR_NOTA_CRD
-
-ALTER TABLE PV_EMPR_NOTA_CRD ADD CONSTRAINT pk_empr_nota_crd PRIMARY KEY (emp_empresa,emp_nota_crd)
 ;
 
 -- Table PV_PROMOCIONES
@@ -1157,7 +1137,7 @@ CREATE TABLE PV_ABONOS_VENTAS(
 
 -- Create indexes for table PV_ABONOS_VENTAS
 
-CREATE INDEX IX_Relationship7 ON PV_ABONOS_VENTAS (abov_fac_id)
+CREATE INDEX abonos_ventas_idx ON PV_ABONOS_VENTAS (abov_fac_id)
 ;
 
 -- Add keys for table PV_ABONOS_VENTAS
@@ -1709,26 +1689,6 @@ ALTER TABLE PV_ACCIONES ADD CONSTRAINT clientes_acciones FOREIGN KEY (acc_client
 
 
 
-ALTER TABLE PV_CLIEN_NOTA_CRD ADD CONSTRAINT clientes_clien_nota_cred FOREIGN KEY (cli_cliente) REFERENCES PV_CLIENTES (cli_id)
-;
-
-
-
-ALTER TABLE PV_CLIEN_NOTA_CRD ADD CONSTRAINT notas_cred_clien_nota_crd FOREIGN KEY (cli_nota_crd) REFERENCES PV_NOTAS_CRED (not_id)
-;
-
-
-
-ALTER TABLE PV_EMPR_NOTA_CRD ADD CONSTRAINT compania_empe_nota_crd FOREIGN KEY (emp_empresa) REFERENCES PV_COMPANIA (emp_id)
-;
-
-
-
-ALTER TABLE PV_EMPR_NOTA_CRD ADD CONSTRAINT empr_nota_crd_nota_credito FOREIGN KEY (emp_nota_crd) REFERENCES PV_NOTAS_CRED (not_id)
-;
-
-
-
 ALTER TABLE PV_PROD_PROMO ADD CONSTRAINT prod_promo_productos FOREIGN KEY (pro_producto) REFERENCES PV_PRODUCTOS (pro_id)
 ;
 
@@ -1820,6 +1780,26 @@ ALTER TABLE PV_ABONOS ADD CONSTRAINT abonos_factura_compra FOREIGN KEY (abo_fac_
 
 
 ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT abonos_facturas_venta FOREIGN KEY (abov_fac_id) REFERENCES PV_FACTURAS_VENTA (fac_id)
+;
+
+
+
+ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT Cliente nota de credito FOREIGN KEY (not_cliente) REFERENCES PV_CLIENTES (cli_id)
+;
+
+
+
+ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT Compañia nota de credito FOREIGN KEY (not_empresa) REFERENCES PV_COMPANIA (emp_id)
+;
+
+
+
+ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT nota credito produtos ventas FOREIGN KEY (det_nota_credito) REFERENCES PV_NOTAS_CRED (not_id)
+;
+
+
+
+ALTER TABLE PV_DETALL_FAC_COMPRA ADD CONSTRAINT Notas credito empresa FOREIGN KEY (det_notas_credito) REFERENCES PV_NOTAS_CRED (not_id)
 ;
 
 

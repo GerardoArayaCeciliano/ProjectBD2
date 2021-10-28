@@ -480,7 +480,9 @@ CREATE TABLE PV_DETALL_FAC_COMPRA(
   det_producto Number NOT NULL,
   det_factura Number NOT NULL,
   det_cantidad Float NOT NULL,
-  det_precio_unidad Float NOT NULL
+  det_precio_unidad Float NOT NULL,
+  det_devolucion Char(1 )
+        CONSTRAINT det_Fact_comp_ck_devolucion CHECK (det_devolucion in ('A','I'))
 )
 ;
 
@@ -709,7 +711,9 @@ CREATE TABLE PV_DETALL_FAC_VENTA(
   det_promocion Number,
   det_unidades Number NOT NULL,
   det_subtotal Float NOT NULL,
-  det_descuento Float NOT NULL
+  det_descuento Float NOT NULL,
+  det_devolucion Char(1 ) NOT NULL
+        CONSTRAINT detalle_factura_ck_devolucion CHECK (det_devolucion in ('A','I'))
 )
 ;
 
@@ -1216,7 +1220,7 @@ CREATE TABLE PV_BITACORA(
   bit_detalle Varchar2(512 ) NOT NULL,
   bit_usuario Varchar2(128 ) NOT NULL,
   bit_fecha Date NOT NULL,
-  CONSTRAINT bitacora_ck_tipo_accion CHECK (bit_tipo_accion in ('INSERTAR', 'MODIFICAR'))
+  CONSTRAINT bitacora_ck_tipo_accion CHECK (bit_accion in ('INSERTAR', 'MODIFICAR'))
 )
 ;
 

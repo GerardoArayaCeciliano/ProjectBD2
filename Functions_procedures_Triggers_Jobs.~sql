@@ -32,11 +32,11 @@ declare
   cuenta_proveedor number;
   pragma autonomous_transaction;
 begin
-  select c.cue_id into cuenta_proveedor from PEV_CUENTAS_PAGAR c where c.cue_proveedor = :new.fac_provedor;
+  select c.cue_id into cuenta_proveedor from PV_CUENTAS_PAGAR c where c.cue_proveedor = :new.fac_provedor;
   
   begin
     if(:new.fac_estado = 'P') then
-      update PEV_CUENTAS_PAGAR c
+      update PV_CUENTAS_PAGAR c
       set c.cue_monto = (c.cue_monto + :new.fac_monto_total)
       where c.cue_id = cuenta_proveedor;
       commit;
@@ -51,22 +51,22 @@ end TRI_AUMENTAR_CUENTA_PAGAR;
 
 create or replace noneditionable trigger TRI_CAMBIAR_ESTADO_FAC_VENTA
   after insert
-  on pv_abonos_ventas 
+  on pv_abonos_ventas
   for each row
 declare
   -- local variables here
   abonos float;
   montoTotal float;
   pragma autonomous_transaction;
-  
+
 begin
   begin
-    select f.fac_total into montoTotal from PV_FACTURAS_VENTA f where f.fac_id = :new.fac_id;
-    select SUM(a.abov_monto) into abonos from PV_ABONOS_VENTAS a where a.fac_id = :new.fac_id;
+    select f.fac_total into montoTotal from PV_FACTURAS_VENTA f where f.fac_id = :new.abov_fac_id;
+    select SUM(a.abov_monto) into abonos from PV_ABONOS_VENTAS a where a.abov_fac_id = :new.abov_fac_id;
 
     if (abonos = montoTotal) then
       begin
-        UPDATE PV_FACTURAS_VENTA f set f.fac_estado = 'C' where f.fac_id = :new.fac_id;
+        UPDATE PV_FACTURAS_VENTA f set f.fac_estado = 'C' where f.fac_id = :new.abov_fac_id;
         commit;
       end;
     end if;
@@ -78,9 +78,9 @@ end TRI_CAMBIAR_ESTADO_FAC_VENTA;
 
 --Trigger de cambiar el estado de las facturas de compra a canceladas
 
-create or replace trigger TRI_CAMBIAR_ESTADO_FACT_COMPRA
+create or replace noneditionable trigger TRI_CAMBIAR_ESTADO_FACT_COMPRA
   after insert
-  on pv_abonos 
+  on pv_abonos
   for each row
 declare
 
@@ -89,17 +89,17 @@ declare
   pragma autonomous_transaction;
 begin
   begin
-    select f.fac_monto_total into montoTotal from PV_FACTURAS_COMPRA f where f.fac_id = :new.fac_id;
-    select SUM(a.abo_monto) into abonos from PV_ABONOS a where a.fac_id = :new.fac_id;
+    select f.fac_monto_total into montoTotal from PV_FACTURAS_COMPRA f where f.fac_id = :new.abo_fac_id;
+    select SUM(a.abo_monto) into abonos from PV_ABONOS a where a.abo_fac_id = :new.abo_fac_id;
 
     if (abonos = montoTotal) then
       begin
-        UPDATE PV_FACTURAS_COMPRA f set f.fac_estado = 'C' where f.fac_id = :new.fac_id;
+        UPDATE PV_FACTURAS_COMPRA f set f.fac_estado = 'C' where f.fac_id = :new.abo_fac_id;
         commit;
       end;
     end if;
-  end;  
-    
+  end;
+
 end TRI_CAMBIAR_ESTADO_FACT_COMPRA;
 /
 
@@ -130,7 +130,7 @@ declare
   -- local variables here
 begin
   begin
-     insert into PEV_CUENTAS_PAGAR(CUE_PROVEEDOR,CUE_MONTO) VALUES(:new.pro_id,0);
+     insert into PV_CUENTAS_PAGAR(CUE_PROVEEDOR,CUE_MONTO) VALUES(:new.pro_id,0);
 
   end;
 end TRI_CREAR_CUENTA_GENERAL_EMPRESA;
@@ -147,11 +147,11 @@ declare
   -- local variables here
   cuentaProveed number;
 begin
-  select f.fac_provedor into cuentaProveed from PV_FACTURAS_COMPRA f where f.fac_id = :new.fac_id;
+  select f.fac_provedor into cuentaProveed from PV_FACTURAS_COMPRA f where f.fac_id = :new.abo_fac_id;
   
   begin
     
-     update PEV_CUENTAS_PAGAR c set c.cue_monto = (c.cue_monto - :new.abo_monto) where c.cue_proveedor = cuentaProveed;
+     update PV_CUENTAS_PAGAR c set c.cue_monto = (c.cue_monto - :new.abo_monto) where c.cue_proveedor = cuentaProveed;
 
   end;
 end TRI_DISMINUIR_CUENTAS_PAGAR;
@@ -168,7 +168,7 @@ declare
   -- local variables here
   cuentaCliente number;
 begin
-   select f.fac_cliente into cuentaCliente from PV_FACTURAS_VENTA f where f.fac_id = :new.fac_id;
+   select f.fac_cliente into cuentaCliente from PV_FACTURAS_VENTA f where f.fac_id = :new.abov_fac_id;
   
   begin
     
@@ -176,5 +176,292 @@ begin
 
   end;
 end TRI_DISMINUIR_SALDO_CLIENTE;
+/
+
+
+create or replace noneditionable trigger TRI_CANCELAR_MODIFICACION_PRECIOS
+  before update or delete of pre_precio_costo, pre_impuesto, pre_utilidad, pre_fecha
+  on pv_precios 
+  for each row
+declare
+
+begin
+  RAISE_APPLICATION_ERROR(-20010,'Editar o eliminar los precios no es una accion permitida');
+end TRY_CANCELAR_MODIFICACION_PRECIOS;
+/
+
+
+create or replace noneditionable trigger TRI_ACTUALIZAR_HISTORIAL_PRECIOS
+before insert on pv_precios
+for each row
+declare
+
+begin
+  --Desactiva todos los precios anteriores.
+  update Pv_Precios p set p.pre_estado = 'ANT' where p.pre_producto = :new.pre_producto and p.pre_estado not like 'ANT';
+  
+  --Se cerciora de que el precio mas nuevo quede activo.
+  if :new.pre_estado not like 'ACT' then
+     :new.pre_estado := 'ACT';
+  end if;   
+end ACTUALIZAR_HISTORIAL_PRECIOS;
+/
+
+
+create or replace noneditionable trigger TRI_LIMITAR_FACTURAS_COMPRA_PENDIENTES
+  before insert on pv_facturas_compra
+  for each row
+declare
+  limite_cred pv_limite_credito%rowtype;
+  acumulado_pediente pv_cuentas_pagar.cue_monto%type;
+begin
+  --ATENCION: Este disparador supone que la empresa cuenta con un limite de precio con cada proveedor.
+  --ATENCION: Este disparador supone que el proveedor cuenta con una cuenta por pagar activa.
+  
+  if :new.fac_estado = 'P' then
+    --Se obtiene limite de credito y acumulado aun pediente
+    select * into limite_cred from pv_limite_credito lc where lc.lim_proveedor = :new.fac_provedor;
+    select cp.cue_monto into acumulado_pediente from pv_cuentas_pagar cp where cp.cue_proveedor = :new.fac_provedor;
+    --Se valida si rl acumulado mas la factura actual sobrepasan el limite de credito
+    if (:new.fac_monto_total + acumulado_pediente) > limite_cred.lim_limite_max then
+      RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito con este proveedor.');
+    end if;
+  end if;
+  
+end TRI_LIMITAR_FACTURAS_COMPRA_PENDIENTES;
+/
+
+
+create or replace noneditionable trigger TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES
+  before insert on pv_facturas_venta 
+  for each row
+declare
+  total_por_cobrar pv_cuentas_cobrar.cue_saldo_pendiente%type;
+  limite_pago pv_clientes.cli_cred_max%type;                       
+begin
+  --ATENCION: este disparador supone que ya el cliente cuenta con una cuenta por cobrar registrada
+  --Se lecciona el saldo pendiente y el credito maximo
+  if :new.fac_estado = 'P' then
+    
+    select cc.cue_saldo_pendiente into total_por_cobrar 
+    from pv_cuentas_cobrar cc where cc.cue_cliente = :new.fac_cliente;
+    
+    select c.cli_cred_max into limite_pago 
+    from pv_clientes c where c.cli_id = :new.fac_cliente;
+    
+    if (total_por_cobrar + :new.fac_total) > limite_pago then
+       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito del cliente.');
+    end if;
+  end if;
+end TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES;
+/
+
+
+create or replace trigger TRI_BITACORA_FACTURAS_COMPRA_INSERT
+  after insert
+  on pv_facturas_compra 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+  
+begin
+  
+  Select user into usuario from dual;
+
+  begin
+     case
+      when :new.fac_estado = 'P' then
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de compra en estado pendiente de pago',usuario,sysdate);
+        commit;
+
+      when :new.fac_estado = 'C' then
+
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de compra cancelada a contado',usuario,sysdate);
+        commit;
+
+
+     end case;
+  end;
+end TRI_BITACORA_FACTURAS_COMPRA_INSERT;
+/
+
+
+create or replace trigger TRI_BITACORA_FACTURAS_COMPRA_UPDATE
+  after update
+  on pv_facturas_compra 
+  for each row
+declare
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+
+    if :old.fac_estado = 'P' then
+      if :new.fac_estado = 'C' then
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de compra '+:old.fac_id +' y ahora se encuantra cancelada',usuario,sysdate);
+        commit;
+      end if;
+
+    end if;
+
+    if :new.fac_estado = 'I' then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de compra '+:old.fac_id +' y su estado ahora es inactivo',usuario,sysdate);
+        commit;
+    end if;
+
+    if :old.fac_monto_total <> :new.fac_monto_total then
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó el monto de la factura de compra '+:old.fac_id,usuario,sysdate);
+        commit;
+    end if;
+
+
+  end;
+  
+end TRI_BITACORA_FACTURAS_COMPRA_UPDATE;
+/
+
+
+create or replace trigger TRI_BITACORA_FACTURAS_VENTA_INSERT
+  after insert
+  on pv_facturas_venta
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+    case
+      when :new.fac_estado = 'P' then
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta en estado pendiente de pago',usuario,sysdate);
+        commit;
+
+      when :new.fac_estado = 'C' then
+
+        case
+          when :new.fac_tipo_pago = 'EFECTIVO' then
+          insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta cancelada en efectivo',usuario,sysdate);
+               commit;
+
+          when :new.fac_tipo_pago = 'SINPE' then
+          insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta cancelada por sinpe',usuario,sysdate);
+               commit;
+          when :new.fac_tipo_pago = 'TARJETA' then
+          insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta cancelada en tarjeta',usuario,sysdate);
+               commit;
+
+        end case;
+
+
+    end case;
+  end;
+
+end TRI_BITACORA_FACTURAS_VENTA_INSERT;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORA_FACTURAS_VENTAS_UPDATE
+  after update
+  on pv_facturas_venta
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+
+    if :old.fac_estado = 'P' then
+      if :new.fac_estado = 'C' then
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de venta y ahora se encuantra cancelada',usuario,sysdate);
+        commit;
+      end if;
+
+    end if;
+
+    if :new.fac_estado = 'I' then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de venta y su estado ahora es inactivo',usuario,sysdate);
+        commit;
+    end if;
+
+    if :old.fac_total <> :new.fac_total then
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó el monto de la factura de venta',usuario,sysdate);
+        commit;
+    end if;
+
+    if ((:old.fac_sede <> :new.fac_sede) or (:old.fac_cliente <> :new.fac_cliente) or (:old.fac_fecha <> :new.fac_fecha) or (:old.fac_tipo_pago <> :new.fac_tipo_pago)) then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de ventas ',usuario,sysdate);
+        commit;
+    end if;
+
+  end;
+
+end TRI_BITACORA_FACTURAS_VENTAS_UPDATE;
+/
+
+
+create or replace trigger TRI_BITACORA_PRECIOS
+  after insert
+  on pv_precios 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+    insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Cambio de precios','Se insertó un nuevo precio de un producto ',usuario,sysdate);
+        commit;
+  end;  
+
+end TRI_BITACORA_PRECIOS;
+/
+
+
+create or replace trigger TRI_BITACORA_PRECIOS_UPDATE
+  after update
+  on pv_precios 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+  
+begin
+  Select user into usuario from dual;
+  
+  begin
+    if (:new.pre_estado = 'ACT') then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('MODIFICAR','Cambio de precios','Se insertó un nuevo precio del producto y el anterior ya no es válido',usuario,sysdate);
+        commit;
+    end if;
+    
+  end; 
+end TRI_BITACORA_PRECIOS_UPDATE;
 /
 

@@ -224,7 +224,7 @@ begin
     select cp.cue_monto into acumulado_pediente from pv_cuentas_pagar cp where cp.cue_proveedor = :new.fac_provedor;
     --Se valida si rl acumulado mas la factura actual sobrepasan el limite de credito
     if (:new.fac_monto_total + acumulado_pediente) > limite_cred.lim_limite_max then
-      RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del lÃ­mite de crÃ©dito con este proveedor.');
+      RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito con este proveedor.');
     end if;
   end if;
   
@@ -250,7 +250,7 @@ begin
     from pv_clientes c where c.cli_id = :new.fac_cliente;
     
     if (total_por_cobrar + :new.fac_total) > limite_pago then
-       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del lÃ­mite de crÃ©dito del cliente.');
+       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito del cliente.');
     end if;
   end if;
 end TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES;
@@ -273,14 +273,14 @@ begin
   begin
      case
       when :new.fac_estado = 'P' then
-        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ factura de compra en estado pendiente de pago',usuario,sysdate);
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de compra en estado pendiente de pago',usuario,sysdate);
         commit;
 
       when :new.fac_estado = 'C' then
 
-        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ factura de venta cancelada a contado',usuario,sysdate);
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de compra cancelada a contado',usuario,sysdate);
         commit;
 
 
@@ -304,22 +304,22 @@ begin
 
     if :old.fac_estado = 'P' then
       if :new.fac_estado = 'C' then
-        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ la factura de compra y ahora se encuantra cancelada',usuario,sysdate);
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de compra '+:old.fac_id +' y ahora se encuantra cancelada',usuario,sysdate);
         commit;
       end if;
 
     end if;
 
     if :new.fac_estado = 'I' then
-      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ la factura de compra y su estado ahora es inactivo',usuario,sysdate);
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de compra '+:old.fac_id +' y su estado ahora es inactivo',usuario,sysdate);
         commit;
     end if;
 
     if :old.fac_monto_total <> :new.fac_monto_total then
-       insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ el monto de la factura de compra',usuario,sysdate);
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó el monto de la factura de compra '+:old.fac_id,usuario,sysdate);
         commit;
     end if;
 
@@ -344,25 +344,25 @@ begin
   begin
     case
       when :new.fac_estado = 'P' then
-        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ factura de venta en estado pendiente de pago',usuario,sysdate);
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta en estado pendiente de pago',usuario,sysdate);
         commit;
 
       when :new.fac_estado = 'C' then
 
         case
           when :new.fac_tipo_pago = 'EFECTIVO' then
-          insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ factura de venta cancelada en efectivo',usuario,sysdate);
+          insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta cancelada en efectivo',usuario,sysdate);
                commit;
 
           when :new.fac_tipo_pago = 'SINPE' then
-          insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ factura de venta cancelada por sinpe',usuario,sysdate);
+          insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta cancelada por sinpe',usuario,sysdate);
                commit;
           when :new.fac_tipo_pago = 'TARJETA' then
-          insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ factura de venta cancelada en tarjeta',usuario,sysdate);
+          insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Facturación','Se insertó factura de venta cancelada en tarjeta',usuario,sysdate);
                commit;
 
         end case;
@@ -390,28 +390,28 @@ begin
 
     if :old.fac_estado = 'P' then
       if :new.fac_estado = 'C' then
-        insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ la factura de venta y ahora se encuantra cancelada',usuario,sysdate);
+        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de venta '+:old.fac_id+' y ahora se encuantra cancelada',usuario,sysdate);
         commit;
       end if;
 
     end if;
 
     if :new.fac_estado = 'I' then
-      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ la factura de venta y su estado ahora es inactivo',usuario,sysdate);
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de venta '+:old.fac_id+' y su estado ahora es inactivo',usuario,sysdate);
         commit;
     end if;
 
     if :old.fac_total <> :new.fac_total then
-       insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ el monto de la factura de venta',usuario,sysdate);
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó el monto de la factura de venta '+:old.fac_id,usuario,sysdate);
         commit;
     end if;
 
     if ((:old.fac_sede <> :new.fac_sede) or (:old.fac_cliente <> :new.fac_cliente) or (:old.fac_fecha <> :new.fac_fecha) or (:old.fac_tipo_pago <> :new.fac_tipo_pago)) then
-      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Se modificÃ³ la factura de ventas ',usuario,sysdate);
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación','Se modificó la factura de ventas '+:old.fac_id,usuario,sysdate);
         commit;
     end if;
 
@@ -433,8 +433,8 @@ begin
   Select user into usuario from dual;
   
   begin
-    insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Se insertÃ³ un nuevo precio de un producto ',usuario,sysdate);
+    insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Cambio de precios','Se insertó un nuevo precio del producto '+:new.pre_producto,usuario,sysdate);
         commit;
   end;  
 
@@ -456,8 +456,8 @@ begin
   
   begin
     if (:new.pre_estado = 'ACT') then
-      insert into PV_BITACORA(BIT_TIPO_ACCION,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('MODIFICAR','Se insertÃ³ un nuevo precio del producto y el anterior ya no es vÃ¡lido',usuario,sysdate);
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('MODIFICAR','Cambio de precios','Se insertó un nuevo precio del producto '+:new.pre_producto+ ' y el precio anterior ya no es válido',usuario,sysdate);
         commit;
     end if;
     

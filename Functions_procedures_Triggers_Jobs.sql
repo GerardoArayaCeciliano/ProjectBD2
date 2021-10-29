@@ -621,6 +621,63 @@ begin
 end TRI_BITACORAS_DESCUENTOS_UPDATE;
 /
 
+create or replace noneditionable trigger TRI_BITACORA_CLIENTE_INSERT
+  after insert
+  on pv_clientes 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+    insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Clientes',concat('Se registró un nuevo cliente id=',:new.cli_id),usuario,sysdate);
+        commit;
+  end;
+
+
+end TRI_BITACORA_CLIENTE_INSERT;
+/
+
+create or replace noneditionable trigger TRI_BITACORA_CLIENTE_UPDATE
+  after update
+  on pv_clientes 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+    
+    if(:new.cli_estado = 'I') then
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Clientes',concat(concat('Se modificó el cliente id=',:old.cli_id),' y ahora se encuentra inactivo'),usuario,sysdate);
+       commit;  
+    end if;
+    
+                                
+    if(:old.cli_cred_max <> :new.cli_cred_max) then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Clientes',concat('Se modificó el crédito máximo del cliente id=',:old.cli_id),usuario,sysdate);
+       commit;
+    else
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Clientes',concat('Se modificó los datos del cliente id=',:old.cli_id),usuario,sysdate);
+       commit;                              
+    end if;
+    
+
+  end;
+  
+end TRI_BITACORA_CLIENTE_UPDATE;
+/
+
 
 --Funcion de envio de correos electronicos. Envia correos desde la direccion pruebas123pz@gmail.com
 create or replace function enviar_correo(destinarios in varchar2, concepto in varchar2, cuerpo in varchar2) return varchar2 is
@@ -673,4 +730,47 @@ begin
         return 'Correo invalido';  
   end if;
 end enviar_correo;
+/
+
+--envia correo de los productos por vencer o qu estan en bodega
+
+create or replace noneditionable procedure PROC_VERIFICAR_FECHA_PRODUCTOS(mensaje out varchar2) is
+  cursor productos is select p.pro_id,p.pro_vencimiento,p.pro_ingreso from Pv_Productos p;
+  res varchar2(100);
+  porVencer varchar2(100);
+  enBodega varchar2(100);
+  mensj1 varchar2(100);
+  mensj2 varchar2(100);
+begin
+  porVencer:= ' ';
+  enBodega := ' ';
+  mensj1 := 'Los siguientes productos están por vencer ';
+  mensj2 := 'Los siguientes productos llevan 6 meses o más de estar en bodega ';
+  
+  for var in productos loop
+    if((var.pro_vencimiento)<=sysdate+8) then 
+          porVencer:= porVencer ||', '|| var.pro_id;           
+    end if;
+
+    if(MONTHS_BETWEEN(sysdate,var.pro_ingreso)>6) then 
+         enBodega:= enBodega ||', '|| var.pro_id;                                           
+    end if;
+  end loop;
+  
+  if ((porVencer<>' ')and(enBodega<>' '))then
+    mensaje:=mensj1||porVencer||'. '|| mensj2||enBodega;
+    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento',mensaje );
+  elsif ((porVencer<>' ')and(enBodega=' '))then
+    mensaje:=mensj1||porVencer;
+    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento',mensaje );
+  elsif ((porVencer=' ')and(enBodega<>' '))then
+    mensaje:=mensj2||enBodega;
+    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento',mensaje );
+  end if;
+
+  
+end PROC_VERIFICAR_FECHA_PRODUCTOS;
+/
+
+
 

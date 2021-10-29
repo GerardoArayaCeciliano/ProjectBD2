@@ -786,9 +786,9 @@ COMMENT ON COLUMN PV_ACCIONES.acc_estado IS 'Activo(A), Inactivo(I)'
 -- Table PV_NOTAS_CRED
 
 CREATE TABLE PV_NOTAS_CRED(
+  not_empresa Number,
   not_id Number NOT NULL,
   not_cliente Number,
-  not_empresa Number,
   not_monto Float NOT NULL,
   not_estado Char(1 ) NOT NULL,
   not_fecha_emision Date NOT NULL,
@@ -802,7 +802,7 @@ CREATE TABLE PV_NOTAS_CRED(
 CREATE INDEX IX_Relationship3 ON PV_NOTAS_CRED (not_cliente)
 ;
 
-CREATE INDEX IX_Relationship4 ON PV_NOTAS_CRED (not_empresa)
+CREATE INDEX IX_Relationship1 ON PV_NOTAS_CRED (not_empresa)
 ;
 
 -- Add keys for table PV_NOTAS_CRED
@@ -1789,17 +1789,17 @@ ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT cliente_nota_de_credito FOREIGN KEY (no
 
 
 
-ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT Compani_ nota_credito FOREIGN KEY (not_empresa) REFERENCES PV_COMPANIA (emp_id)
-;
-
-
-
 ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT nota_credito_produtos_ventas FOREIGN KEY (det_nota_credito) REFERENCES PV_NOTAS_CRED (not_id)
 ;
 
 
 
 ALTER TABLE PV_DETALL_FAC_COMPRA ADD CONSTRAINT notas_credito_empresa FOREIGN KEY (det_notas_credito) REFERENCES PV_NOTAS_CRED (not_id)
+;
+
+
+
+ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT nota_credito_empresa FOREIGN KEY (not_empresa) REFERENCES PV_COMPANIA (emp_id)
 ;
 
 

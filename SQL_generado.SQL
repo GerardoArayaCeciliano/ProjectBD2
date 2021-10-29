@@ -1,6 +1,6 @@
 ﻿/*
 Created: 20/8/2021
-Modified: 27/10/2021
+Modified: 28/10/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -1784,22 +1784,22 @@ ALTER TABLE PV_ABONOS_VENTAS ADD CONSTRAINT abonos_facturas_venta FOREIGN KEY (a
 
 
 
-ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT Cliente nota de credito FOREIGN KEY (not_cliente) REFERENCES PV_CLIENTES (cli_id)
+ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT cliente_nota_de_credito FOREIGN KEY (not_cliente) REFERENCES PV_CLIENTES (cli_id)
 ;
 
 
 
-ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT Compañia nota de credito FOREIGN KEY (not_empresa) REFERENCES PV_COMPANIA (emp_id)
+ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT Compani_ nota_credito FOREIGN KEY (not_empresa) REFERENCES PV_COMPANIA (emp_id)
 ;
 
 
 
-ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT nota credito produtos ventas FOREIGN KEY (det_nota_credito) REFERENCES PV_NOTAS_CRED (not_id)
+ALTER TABLE PV_DETALL_FAC_VENTA ADD CONSTRAINT nota_credito_produtos_ventas FOREIGN KEY (det_nota_credito) REFERENCES PV_NOTAS_CRED (not_id)
 ;
 
 
 
-ALTER TABLE PV_DETALL_FAC_COMPRA ADD CONSTRAINT Notas credito empresa FOREIGN KEY (det_notas_credito) REFERENCES PV_NOTAS_CRED (not_id)
+ALTER TABLE PV_DETALL_FAC_COMPRA ADD CONSTRAINT notas_credito_empresa FOREIGN KEY (det_notas_credito) REFERENCES PV_NOTAS_CRED (not_id)
 ;
 
 

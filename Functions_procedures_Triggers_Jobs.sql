@@ -271,16 +271,16 @@ begin
   Select user into usuario from dual;
 
   begin
-     case
+      case
       when :new.fac_estado = 'P' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de compra ',:new.fac_id),' en estado pendiente de pago'),usuario,sysdate);
+               values('INSERTAR','Facturación',concat(concat('Se insertó factura de compra id ',:new.fac_id),', en estado pendiente de pago'),usuario,sysdate);
         commit;
 
       when :new.fac_estado = 'C' then
 
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de compra ',:new.fac_id),' cancelada a contado'),usuario,sysdate);
+               values('INSERTAR','Facturación',concat(concat('Se insertó factura de compra id',:new.fac_id),', cancelada a contado'),usuario,sysdate);
         commit;
 
 
@@ -306,21 +306,22 @@ begin
     if :old.fac_estado = 'P' then
       if :new.fac_estado = 'C' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de compra ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de compra id ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
         commit;
       end if;
-
-    end if;
-
-    if :new.fac_estado = 'I' then
+    elsif :new.fac_estado = 'I' then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de compra ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de compra id ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
         commit;
     end if;
 
     if :old.fac_monto_total <> :new.fac_monto_total then
        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó el monto de la factura de compra ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat('Se modificó el monto de la factura de compra id ',:old.fac_id),usuario,sysdate);
+        commit;
+    else
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Facturación',concat('Se modificó factura de compra id ',:old.fac_id),usuario,sysdate);
         commit;
     end if;
 
@@ -346,7 +347,7 @@ begin
      case
       when :new.fac_estado = 'P' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta ',:new.fac_id),' en estado pendiente de pago'),usuario,sysdate);
+               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' en estado pendiente de pago'),usuario,sysdate);
         commit;
 
       when :new.fac_estado = 'C' then
@@ -354,16 +355,16 @@ begin
         case
           when :new.fac_tipo_pago = 'EFECTIVO' then
           insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta ',:new.fac_id),' cancelada en efectivo'),usuario,sysdate);
+               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' cancelada en efectivo'),usuario,sysdate);
                commit;
 
           when :new.fac_tipo_pago = 'SINPE' then
           insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta ',:new.fac_id),' cancelada por sinpe'),usuario,sysdate);
+               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' cancelada por sinpe'),usuario,sysdate);
                commit;
           when :new.fac_tipo_pago = 'TARJETA' then
           insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta ',:new.fac_id),' cancelada en tarjeta'),usuario,sysdate);
+               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' cancelada en tarjeta'),usuario,sysdate);
                commit;
 
         end case;
@@ -389,30 +390,26 @@ begin
 
   begin
 
-    if :old.fac_estado = 'P' then
+     if :old.fac_estado = 'P' then
       if :new.fac_estado = 'C' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de venta ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de venta id ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
         commit;
       end if;
-
-    end if;
-
-    if :new.fac_estado = 'I' then
+    elsif :new.fac_estado = 'I' then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de venta ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de venta id ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
         commit;
     end if;
+    
 
     if :old.fac_total <> :new.fac_total then
        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó el monto de la factura de venta ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat('Se modificó el monto de la factura de venta id ',:old.fac_id),usuario,sysdate);
         commit;
-    end if;
-
-    if ((:old.fac_sede <> :new.fac_sede) or (:old.fac_cliente <> :new.fac_cliente) or (:old.fac_fecha <> :new.fac_fecha) or (:old.fac_tipo_pago <> :new.fac_tipo_pago)) then
+    else 
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó la factura de ventas ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturación',concat('Se modificó la factura de ventas id ',:old.fac_id),usuario,sysdate);
         commit;
     end if;
 
@@ -458,13 +455,173 @@ begin
   begin
     if (:new.pre_estado = 'ACT') then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('MODIFICAR','Cambio de precios',concat('Se insertó un nuevo precio del producto ',:new.pre_producto),usuario,sysdate);
+               values('MODIFICAR','Cambio de precios',concat('Se insertó un nuevo precio del producto id ',:new.pre_producto),usuario,sysdate);
         commit;
     end if;
     
   end; 
 end TRI_BITACORA_PRECIOS_UPDATE;
 /
+
+
+create or replace noneditionable trigger TRI_BITACORA_PRECIOS_UPDATE
+  after update
+  on pv_precios
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+
+begin
+  Select user into usuario from dual;
+
+  begin
+    if (:new.pre_estado = 'ACT') then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('MODIFICAR','Cambio de precios',concat('Se insertó un nuevo precio del producto id ',:new.pre_producto),usuario,sysdate);
+        commit;
+    end if;
+
+  end;
+end TRI_BITACORA_PRECIOS_UPDATE;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORA_PROMOCIONES_INSERT
+  after insert
+  on pv_promociones 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+
+  begin
+    insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Promociones',concat('Se insertó una nueva promocion id ',:new.pro_id),usuario,sysdate);
+        commit;
+  end;
+end TRI_BITACORA_PROMOCIONES_INSERT;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORA_PROMOCION_UPDATE
+  after update
+  on pv_promociones 
+  for each row
+declare
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+                         
+    if(:old.pro_estado = 'I')then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Promociones',concat('Se inactivó la promoción id ',:old.pro_id),usuario,sysdate);
+       commit;
+    end if;
+    
+    if (:old.pro_validez_hasta<>:new.pro_validez_hasta) then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Promociones',concat('Se modificó la fecha de válidez de la promoción id ',:old.pro_id),usuario,sysdate);
+       commit;
+    else
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Promociones',concat('Se modificó la promoción id ',:old.pro_id),usuario,sysdate);
+       commit;
+    end if;
+  end;
+end TRI_BITACORA_PROMOCION_UPDATE;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORA_PROVEEDOR_INSERT
+  after insert
+  on pv_proveedores 
+  for each row
+declare
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+    insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+               values('INSERTAR','Proveedor',concat('Se registró un nuevo proveedor id ',:new.pro_id),usuario,sysdate);
+        commit;
+  end;
+  
+end TRI_BITACORA_PROVEEDOR_INSERT;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORA_PROVEEDOR_UPDATE
+  after update
+  on pv_proveedores 
+  for each row
+declare
+  -- local variables here
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+begin
+  Select user into usuario from dual;
+  
+  begin
+                             
+    if((:old.pro_nombre <> :new.pro_nombre)or (:old.pro_telefono<>:new.pro_telefono) or (:old.pro_correo<>:new.pro_correo)) then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Proveedores',concat('Se modificó el proveedor id ',:old.pro_id),usuario,sysdate);
+       commit;
+                              
+    end if;
+    
+
+  end;
+end TRI_BITACORA_PROVEEDOR_UPDATE;
+/
+
+
+create or replace noneditionable trigger TRI_BITACORAS_DESCUENTOS_UPDATE
+  after update
+  on pv_descuentos 
+  for each row
+declare
+  usuario varchar2(30);
+  pragma autonomous_transaction;
+  
+begin
+  Select user into usuario from dual;
+  
+  begin
+    
+    if(:new.dec_estado = 'I') then
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Descuentos',concat(concat('Se modificó el descuento id ',:old.dec_id),' y ahora se encuentra inactivo'),usuario,sysdate);
+       commit;  
+    end if;
+    
+                               
+    if(:old.dec_tipo <> :new.dec_tipo) then
+      insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Descuentos',concat('Se modificó el tipo del descuento id ',:old.dec_id),usuario,sysdate);
+       commit;
+    else
+       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
+                 values('MODIFICAR','Descuentos',concat('Se modificó los datos del desceunto id ',:old.dec_id),usuario,sysdate);
+       commit;                              
+    end if;
+    
+
+  end;
+end TRI_BITACORAS_DESCUENTOS_UPDATE;
+/
+
+
 
 
 

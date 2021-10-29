@@ -224,7 +224,7 @@ begin
     select cp.cue_monto into acumulado_pediente from pv_cuentas_pagar cp where cp.cue_proveedor = :new.fac_provedor;
     --Se valida si rl acumulado mas la factura actual sobrepasan el limite de credito
     if (:new.fac_monto_total + acumulado_pediente) > limite_cred.lim_limite_max then
-      RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito con este proveedor.');
+      RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del lï¿½mite de crï¿½dito con este proveedor.');
     end if;
   end if;
   
@@ -250,7 +250,7 @@ begin
     from pv_clientes c where c.cli_id = :new.fac_cliente;
     
     if (total_por_cobrar + :new.fac_total) > limite_pago then
-       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del límite de crédito del cliente.');
+       RAISE_APPLICATION_ERROR(-20010,'Esta factura excede el del lï¿½mite de crï¿½dito del cliente.');
     end if;
   end if;
 end TRI_LIMITAR_FACTURAS_VENTA_PENDIENTES;
@@ -274,13 +274,13 @@ begin
       case
       when :new.fac_estado = 'P' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de compra id ',:new.fac_id),', en estado pendiente de pago'),usuario,sysdate);
+               values('INSERTAR','Facturaciï¿½n',concat(concat('Se insertï¿½ factura de compra id ',:new.fac_id),', en estado pendiente de pago'),usuario,sysdate);
         commit;
 
       when :new.fac_estado = 'C' then
 
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de compra id',:new.fac_id),', cancelada a contado'),usuario,sysdate);
+               values('INSERTAR','Facturaciï¿½n',concat(concat('Se insertï¿½ factura de compra id',:new.fac_id),', cancelada a contado'),usuario,sysdate);
         commit;
 
 
@@ -306,22 +306,22 @@ begin
     if :old.fac_estado = 'P' then
       if :new.fac_estado = 'C' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de compra id ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat(concat('Se modificï¿½ la factura de compra id ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
         commit;
       end if;
     elsif :new.fac_estado = 'I' then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de compra id ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat(concat('Se modificï¿½ la factura de compra id ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
         commit;
     end if;
 
     if :old.fac_monto_total <> :new.fac_monto_total then
        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó el monto de la factura de compra id ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat('Se modificï¿½ el monto de la factura de compra id ',:old.fac_id),usuario,sysdate);
         commit;
     else
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó factura de compra id ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat('Se modificï¿½ factura de compra id ',:old.fac_id),usuario,sysdate);
         commit;
     end if;
 
@@ -347,7 +347,7 @@ begin
      case
       when :new.fac_estado = 'P' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' en estado pendiente de pago'),usuario,sysdate);
+               values('INSERTAR','Facturaciï¿½n',concat(concat('Se insertï¿½ factura de venta id ',:new.fac_id),' en estado pendiente de pago'),usuario,sysdate);
         commit;
 
       when :new.fac_estado = 'C' then
@@ -355,16 +355,16 @@ begin
         case
           when :new.fac_tipo_pago = 'EFECTIVO' then
           insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' cancelada en efectivo'),usuario,sysdate);
+               values('INSERTAR','Facturaciï¿½n',concat(concat('Se insertï¿½ factura de venta id ',:new.fac_id),' cancelada en efectivo'),usuario,sysdate);
                commit;
 
           when :new.fac_tipo_pago = 'SINPE' then
           insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' cancelada por sinpe'),usuario,sysdate);
+               values('INSERTAR','Facturaciï¿½n',concat(concat('Se insertï¿½ factura de venta id ',:new.fac_id),' cancelada por sinpe'),usuario,sysdate);
                commit;
           when :new.fac_tipo_pago = 'TARJETA' then
           insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Facturación',concat(concat('Se insertó factura de venta id ',:new.fac_id),' cancelada en tarjeta'),usuario,sysdate);
+               values('INSERTAR','Facturaciï¿½n',concat(concat('Se insertï¿½ factura de venta id ',:new.fac_id),' cancelada en tarjeta'),usuario,sysdate);
                commit;
 
         end case;
@@ -393,23 +393,23 @@ begin
      if :old.fac_estado = 'P' then
       if :new.fac_estado = 'C' then
         insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de venta id ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat(concat('Se modificï¿½ la factura de venta id ',:old.fac_id),' y ahora se encuantra cancelada'),usuario,sysdate);
         commit;
       end if;
     elsif :new.fac_estado = 'I' then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat(concat('Se modificó la factura de venta id ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat(concat('Se modificï¿½ la factura de venta id ',:old.fac_id),' y su estado ahora es inactivo'),usuario,sysdate);
         commit;
     end if;
     
 
     if :old.fac_total <> :new.fac_total then
        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó el monto de la factura de venta id ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat('Se modificï¿½ el monto de la factura de venta id ',:old.fac_id),usuario,sysdate);
         commit;
     else 
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Facturación',concat('Se modificó la factura de ventas id ',:old.fac_id),usuario,sysdate);
+                 values('MODIFICAR','Facturaciï¿½n',concat('Se modificï¿½ la factura de ventas id ',:old.fac_id),usuario,sysdate);
         commit;
     end if;
 
@@ -432,7 +432,7 @@ begin
   
   begin
     insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Cambio de precios',concat('Se insertó un nuevo precio del producto ',:new.pre_producto),usuario,sysdate);
+               values('INSERTAR','Cambio de precios',concat('Se insertï¿½ un nuevo precio del producto ',:new.pre_producto),usuario,sysdate);
         commit;
   end; 
 
@@ -455,7 +455,7 @@ begin
   begin
     if (:new.pre_estado = 'ACT') then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('MODIFICAR','Cambio de precios',concat('Se insertó un nuevo precio del producto id ',:new.pre_producto),usuario,sysdate);
+               values('MODIFICAR','Cambio de precios',concat('Se insertï¿½ un nuevo precio del producto id ',:new.pre_producto),usuario,sysdate);
         commit;
     end if;
     
@@ -479,7 +479,7 @@ begin
   begin
     if (:new.pre_estado = 'ACT') then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('MODIFICAR','Cambio de precios',concat('Se insertó un nuevo precio del producto id ',:new.pre_producto),usuario,sysdate);
+               values('MODIFICAR','Cambio de precios',concat('Se insertï¿½ un nuevo precio del producto id ',:new.pre_producto),usuario,sysdate);
         commit;
     end if;
 
@@ -501,7 +501,7 @@ begin
 
   begin
     insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Promociones',concat('Se insertó una nueva promocion id ',:new.pro_id),usuario,sysdate);
+               values('INSERTAR','Promociones',concat('Se insertï¿½ una nueva promocion id ',:new.pro_id),usuario,sysdate);
         commit;
   end;
 end TRI_BITACORA_PROMOCIONES_INSERT;
@@ -522,17 +522,17 @@ begin
                          
     if(:old.pro_estado = 'I')then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Promociones',concat('Se inactivó la promoción id ',:old.pro_id),usuario,sysdate);
+                 values('MODIFICAR','Promociones',concat('Se inactivï¿½ la promociï¿½n id ',:old.pro_id),usuario,sysdate);
        commit;
     end if;
     
     if (:old.pro_validez_hasta<>:new.pro_validez_hasta) then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Promociones',concat('Se modificó la fecha de válidez de la promoción id ',:old.pro_id),usuario,sysdate);
+                 values('MODIFICAR','Promociones',concat('Se modificï¿½ la fecha de vï¿½lidez de la promociï¿½n id ',:old.pro_id),usuario,sysdate);
        commit;
     else
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Promociones',concat('Se modificó la promoción id ',:old.pro_id),usuario,sysdate);
+                 values('MODIFICAR','Promociones',concat('Se modificï¿½ la promociï¿½n id ',:old.pro_id),usuario,sysdate);
        commit;
     end if;
   end;
@@ -552,7 +552,7 @@ begin
   
   begin
     insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-               values('INSERTAR','Proveedor',concat('Se registró un nuevo proveedor id ',:new.pro_id),usuario,sysdate);
+               values('INSERTAR','Proveedor',concat('Se registrï¿½ un nuevo proveedor id ',:new.pro_id),usuario,sysdate);
         commit;
   end;
   
@@ -575,7 +575,7 @@ begin
                              
     if((:old.pro_nombre <> :new.pro_nombre)or (:old.pro_telefono<>:new.pro_telefono) or (:old.pro_correo<>:new.pro_correo)) then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Proveedores',concat('Se modificó el proveedor id ',:old.pro_id),usuario,sysdate);
+                 values('MODIFICAR','Proveedores',concat('Se modificï¿½ el proveedor id ',:old.pro_id),usuario,sysdate);
        commit;
                               
     end if;
@@ -601,18 +601,18 @@ begin
     
     if(:new.dec_estado = 'I') then
        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Descuentos',concat(concat('Se modificó el descuento id ',:old.dec_id),' y ahora se encuentra inactivo'),usuario,sysdate);
+                 values('MODIFICAR','Descuentos',concat(concat('Se modificï¿½ el descuento id ',:old.dec_id),' y ahora se encuentra inactivo'),usuario,sysdate);
        commit;  
     end if;
     
                                
     if(:old.dec_tipo <> :new.dec_tipo) then
       insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Descuentos',concat('Se modificó el tipo del descuento id ',:old.dec_id),usuario,sysdate);
+                 values('MODIFICAR','Descuentos',concat('Se modificï¿½ el tipo del descuento id ',:old.dec_id),usuario,sysdate);
        commit;
     else
        insert into PV_BITACORA(BIT_ACCION,BIT_TIPO,BIT_DETALLE,BIT_USUARIO,BIT_FECHA)
-                 values('MODIFICAR','Descuentos',concat('Se modificó los datos del desceunto id ',:old.dec_id),usuario,sysdate);
+                 values('MODIFICAR','Descuentos',concat('Se modificï¿½ los datos del desceunto id ',:old.dec_id),usuario,sysdate);
        commit;                              
     end if;
     
@@ -622,6 +622,55 @@ end TRI_BITACORAS_DESCUENTOS_UPDATE;
 /
 
 
+--Funcion de envio de correos electronicos. Envia correos desde la direccion pruebas123pz@gmail.com
+create or replace function enviar_correo(destinarios in varchar2, concepto in varchar2, cuerpo in varchar2) return varchar2 is
 
 
+      destinatarios varchar2(512) := trim(lower(destinarios));
+      email_regex CONSTANT VARCHAR2(300) := '^(([a-zA-Z0-9"_\-])((\.?[a-zA-Z0-9_\/%+="''\-]+)\.?[a-zA-Z0-9+-]*)@(\[((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}|((([a-zA-Z0-9\-]+)\.)+))([a-zA-Z]{2,}|(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\]))$';
+      c utl_smtp.connection;
+      l_mailhost VARCHAR2 (64) := 'smtp.gmail.com';
+      l_from VARCHAR2 (64) := 'pruebas123pz@gmail.com'; -- EMISOR
+      crlf varchar2(2) := UTL_TCP.CRLF;    
+      
+      
+begin
+
+  if destinatarios is not null and regexp_like(destinarios, email_regex) then
+     begin
+        c := utl_smtp.open_connection(
+        host => l_mailhost,
+        port => 587,
+        wallet_path => 'file:C:\wallet\', -- RUTA DEL WALLET (Debe ser cambiada segun la ubucaion en cada base de datos en la que se ejecuta)
+        wallet_password => 'abcd1234', -- CLAVE DE WALLET
+        secure_connection_before_smtp => FALSE);
+        UTL_SMTP.EHLO(c, 'smtp.gmail.com'); -- SERVIDOR SMTP
+        UTL_SMTP.STARTTLS(c);
+        utl_smtp.command( c, 'AUTH LOGIN');
+        utl_smtp.command( c, 'cHJ1ZWJhczEyM3B6QGdtYWlsLmNvbQ=='); -- USUARIO ENCRIPTADO base64 ANTERIOR
+        utl_smtp.command( c, 'MUFCQzJ4eXo='); -- CONTRASENA DEL SCRIPT base64 ANTERIOR
+        UTL_SMTP.mail (c, l_from);
+        UTL_SMTP.rcpt (c, destinatarios);
+        UTL_SMTP.open_data (c);
+        UTL_SMTP.write_data (c, 'Date: ' || TO_CHAR (SYSDATE, 'DD-MON-YYYY HH24:MI:SS') || crlf);
+        UTL_SMTP.write_data (c, 'From: ' || l_from || crlf);
+        UTL_SMTP.write_data (c, 'Subject: ' || concepto || crlf);
+        UTL_SMTP.write_data (c, 'To: ' || destinatarios || crlf);
+        UTL_SMTP.write_data (c, '' || crlf);
+        
+        UTL_SMTP.write_data (c, cuerpo || crlf);--Cuerpo del mensaje
+         
+        UTL_SMTP.close_data (c);
+        UTL_SMTP.quit (c);
+        return 'Correo enviado';
+     exception
+       when utl_smtp.Transient_Error OR utl_smtp.Permanent_Error then
+         return 'No se ha sido posible enviar el email.';
+       when others then
+         return 'Error interno: ' || SQLCODE || ' ' || SQLERRM;
+     end;
+     else
+        return 'Correo invalido';  
+  end if;
+end enviar_correo;
 

@@ -735,42 +735,82 @@ end enviar_correo;
 --envia correo de los productos por vencer o qu estan en bodega
 
 create or replace noneditionable procedure PROC_VERIFICAR_FECHA_PRODUCTOS(mensaje out varchar2) is
-  cursor productos is select p.pro_id,p.pro_vencimiento,p.pro_ingreso from Pv_Productos p;
+  cursor productos is select p.pro_id,p.pro_vencimiento,p.pro_ingreso,p.pro_inventario from Pv_Productos p;
+  cursor inventario is select i.inv_id from PV_INVENTARIOS i where i.inv_tipo='BOD';
   res varchar2(100);
   porVencer varchar2(100);
   enBodega varchar2(100);
   mensj1 varchar2(100);
   mensj2 varchar2(100);
+
 begin
   porVencer:= ' ';
   enBodega := ' ';
-  mensj1 := 'Los siguientes productos están por vencer ';
-  mensj2 := 'Los siguientes productos llevan 6 meses o más de estar en bodega ';
+  mensj1 := 'Los siguientes productos están por vencer id';
+  mensj2 := 'Los siguientes productos llevan 6 meses o más de estar en bodega id';
   
+  --productos por vencer 
   for var in productos loop
     if((var.pro_vencimiento)<=sysdate+8) then 
           porVencer:= porVencer ||', '|| var.pro_id;           
     end if;
+    
+    --productos que se encuentran en bodega
+    for v in inventario loop
+      if(var.pro_inventario=v.inv_id) then
+          if(MONTHS_BETWEEN(sysdate,var.pro_ingreso)>6) then 
+             enBodega:= enBodega ||', '|| var.pro_id;                                           
+          end if;                            
+      end if;
+    end loop;
 
-    if(MONTHS_BETWEEN(sysdate,var.pro_ingreso)>6) then 
-         enBodega:= enBodega ||', '|| var.pro_id;                                           
-    end if;
   end loop;
   
   if ((porVencer<>' ')and(enBodega<>' '))then
-    mensaje:=mensj1||porVencer||'. '|| mensj2||enBodega;
-    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento',mensaje );
+    mensaje:=mensj1||porVencer||'.  '|| mensj2||enBodega;
+    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento de productos y productos en bodega',mensaje );
   elsif ((porVencer<>' ')and(enBodega=' '))then
     mensaje:=mensj1||porVencer;
-    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento',mensaje );
+    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento de productos',mensaje );
   elsif ((porVencer=' ')and(enBodega<>' '))then
     mensaje:=mensj2||enBodega;
-    res := enviar_correo('cordobaangie98@gmail.com', 'Vencimiento',mensaje );
+    res := enviar_correo('cordobaangie98@gmail.com', 'Productos en bodega',mensaje );
   end if;
 
   
 end PROC_VERIFICAR_FECHA_PRODUCTOS;
+
 /
 
 
+create or replace procedure PROC_PREMIAR_CLIENTES(mensaje out varchar2) is
+cursor clientes is select * from (select sum(f.fac_total),c.cli_id,f.fac_sede from PV_FACTURAS_VENTA f 
+     join PV_CLIENTES c on f.fac_cliente=c.cli_id where c.cli_estado='A' group by c.cli_id,f.fac_sede order by sum(f.fac_total) DESC) where Rownum<=10; 
+cursor empresas is select c.emp_id,i.inv_sede from PV_COMPANIA c join PV_INVENTARIOS i on c.emp_inventario=i.inv_id;
+clientesSeleccionados varchar2(100);
+res varchar2(100);
+begin
+  clientesSeleccionados:=' ';
+     
+  begin
+    for v in empresas loop
+     for var in clientes loop
+       if(v.inv_sede=var.fac_sede) then
+          clientesSeleccionados := clientesSeleccionados || ', ' || var.cli_id;
+          insert into PV_NOTAS_CRED(NOT_EMPRESA,NOT_CLIENTE,NOT_MONTO,NOT_ESTADO,NOT_FECHA_EMISION) 
+                 values(v.emp_id,var.cli_id,100000,'A',ADD_MONTHS(sysdate,2));     --nota de crédito solo válido solo por 2 meses      
+       end if;
+     end loop;
+      
+    end loop;
+    
+    if clientesSeleccionados <> ' ' then
+      mensaje:='Los siguientes clientes fueron ganadores de una nota de crédito de 100 mil colones, id '||clientesSeleccionados;
+      res := enviar_correo('cordobaangie98@gmail.com', 'Premiación de Clientes',mensaje );
+    end if;
+    
+  end;
+  
+end PROC_PREMIAR_CLIENTES;
 
+/

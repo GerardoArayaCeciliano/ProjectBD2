@@ -1,6 +1,6 @@
-﻿/*
+/*
 Created: 20/8/2021
-Modified: 28/10/2021
+Modified: 31/10/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -877,10 +877,14 @@ CREATE TABLE PV_DESCUENTOS(
   dec_id Number NOT NULL,
   dec_familia Number,
   dec_proveedor Number,
+  dec_sede Number NOT NULL,
   dec_tipo Char(3 ) NOT NULL,
   dec_porc_desc Float NOT NULL,
+  dec_vigencia_desde Date NOT NULL,
+  dec_vigencia_hasta Date NOT NULL,
   dec_estado Char(1 ) NOT NULL,
-  dec_fec_validez Date NOT NULL,
+  dec_ingreso Date,
+  dec_vencimiento Date,
   CONSTRAINT descuentos_ck_tipo CHECK (dec_tipo in ('FAM','PRO','LIQ')),
   CONSTRAINT descuentos_ck_estado CHECK (dec_estado in ('A','I')),
   CONSTRAINT descuentos_porc_desc CHECK (dec_porc_desc > 0)
@@ -898,6 +902,9 @@ CREATE INDEX descuento_idx_proveedor ON PV_DESCUENTOS (dec_proveedor)
 CREATE INDEX descuentos_idx_tipo ON PV_DESCUENTOS (dec_tipo)
 ;
 
+CREATE INDEX decuentos_idx_sede ON PV_DESCUENTOS (dec_sede)
+;
+
 -- Add keys for table PV_DESCUENTOS
 
 ALTER TABLE PV_DESCUENTOS ADD CONSTRAINT pk_descuentos PRIMARY KEY (dec_id)
@@ -907,13 +914,21 @@ ALTER TABLE PV_DESCUENTOS ADD CONSTRAINT pk_descuentos PRIMARY KEY (dec_id)
 
 COMMENT ON TABLE PV_DESCUENTOS IS 'Guarda los descuentos que se aplican o aplicaron en la las sedes, que pueden ser por provedor, familia o aplicable a productos varios'
 ;
+COMMENT ON COLUMN PV_DESCUENTOS.dec_sede IS 'Sede a la que se aplica este descuento'
+;
 COMMENT ON COLUMN PV_DESCUENTOS.dec_tipo IS 'Por familia, proveedor, liquidacion (PRO, FAM, LIQ)'
 ;
 COMMENT ON COLUMN PV_DESCUENTOS.dec_porc_desc IS 'Porcentaje de decuento'
 ;
+COMMENT ON COLUMN PV_DESCUENTOS.dec_vigencia_desde IS 'Fecha en la que entra a regir el descuento'
+;
+COMMENT ON COLUMN PV_DESCUENTOS.dec_vigencia_hasta IS 'Fecha en la que deja de regir el descuento'
+;
 COMMENT ON COLUMN PV_DESCUENTOS.dec_estado IS 'A, I'
 ;
-COMMENT ON COLUMN PV_DESCUENTOS.dec_fec_validez IS 'Fecha maxima de validez'
+COMMENT ON COLUMN PV_DESCUENTOS.dec_ingreso IS '(En caso de ser descuento por liquidacion) Fecha de ingreso maxima que debe tener un producto para entrar dentro del descuento'
+;
+COMMENT ON COLUMN PV_DESCUENTOS.dec_vencimiento IS '(En caso de ser descuento por liquidacion) decha de maxima que debe tener un producto para entrar dentro del descuento'
 ;
 
 -- Table PV_DESC_LIQUIDACION
@@ -921,17 +936,12 @@ COMMENT ON COLUMN PV_DESCUENTOS.dec_fec_validez IS 'Fecha maxima de validez'
 CREATE TABLE PV_DESC_LIQUIDACION(
   des_producto Number NOT NULL,
   des_descuento Number NOT NULL,
-  des_ingreso Date,
-  des_vencimiento Date,
   des_estado Char(1 ) NOT NULL,
   CONSTRAINT desc_liquidacion_ck_estado CHECK (des_estado in ('A','I'))
 )
 ;
 
 -- Create indexes for table PV_DESC_LIQUIDACION
-
-CREATE INDEX des_liquidacion_idx_vencimiento ON PV_DESC_LIQUIDACION (des_vencimiento)
-;
 
 CREATE INDEX desc_liquidacion_estado ON PV_DESC_LIQUIDACION (des_estado)
 ;
@@ -944,10 +954,6 @@ ALTER TABLE PV_DESC_LIQUIDACION ADD CONSTRAINT pk_desc_liquidacion PRIMARY KEY (
 -- Table and Columns comments section
 
 COMMENT ON TABLE PV_DESC_LIQUIDACION IS 'Se relaciona a un descuento aplicable a productos varios. Los registros en esta tabla se aplican a productos para indicar que tiene un descuento por tema de liquidacion que puede aplicar ya sea por fecgha de ingreso o por fecha de vencimiento cercana'
-;
-COMMENT ON COLUMN PV_DESC_LIQUIDACION.des_ingreso IS 'Descuento por fecha de ingreso'
-;
-COMMENT ON COLUMN PV_DESC_LIQUIDACION.des_vencimiento IS 'Descuento por fecha de vencimiento'
 ;
 COMMENT ON COLUMN PV_DESC_LIQUIDACION.des_estado IS 'A, I'
 ;
@@ -1800,6 +1806,11 @@ ALTER TABLE PV_DETALL_FAC_COMPRA ADD CONSTRAINT notas_credito_empresa FOREIGN KE
 
 
 ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT nota_credito_empresa FOREIGN KEY (not_empresa) REFERENCES PV_COMPANIA (emp_id)
+;
+
+
+
+ALTER TABLE PV_DESCUENTOS ADD CONSTRAINT descuento_sede FOREIGN KEY (dec_sede) REFERENCES PV_SEDES (sed_id)
 ;
 
 

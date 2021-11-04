@@ -814,3 +814,102 @@ begin
 end PROC_PREMIAR_CLIENTES;
 
 /
+
+create or replace noneditionable function GET_DESCUENTOS_LIQUIDACION_ACTIVOS(producto_id pv_productos.pro_id%type) return number is
+  resultado number;
+begin
+  select count(*) into resultado from pv_desc_liquidacion d
+  join pv_productos p on p.pro_id = d.des_producto
+  where p.pro_id = producto_id and  d.des_estado = 'A';
+  return resultado;
+end GET_DESCUENTOS_LIQUIDACION_ACTIVOS;
+
+/
+
+create or replace noneditionable procedure proc_liquidar_inventario(sede_id in pv_sedes.sed_id%type ,id_inventario in pv_inventarios.inv_id%type) is
+       
+       cursor productos is select * from pv_productos p where p.pro_estado = 'A' and p.pro_inventario = id_inventario;
+              
+       liquid_activas number;
+       descuento_liq pv_descuentos%rowtype;
+       
+begin
+  
+  select count(*) into liquid_activas from pv_descuentos d
+         where d.dec_estado = 'A' and d.dec_tipo = 'LIQ' 
+         and d.dec_sede = sede_id and sysdate between d.dec_vigencia_desde and d.dec_vigencia_hasta;
+  
+--Solo se realiza el proceso de liquidacion si hay 1 liquidacion activa en el momento dado para esta sede.
+    if liquid_activas = 1 then
+      begin
+       select * into descuento_liq from pv_descuentos d
+             where d.dec_estado = 'A' and d.dec_tipo = 'LIQ' and d.dec_sede = sede_id 
+             and sysdate between d.dec_vigencia_desde and d.dec_vigencia_hasta;
+--Se recorren los productos del inventario enviado por parametros         
+        for producto in productos loop
+          
+--Se verifica si el producto ya cuenta con descuentos por liquidacion activos.
+          if GET_DESCUENTOS_LIQUIDACION_ACTIVOS(producto.pro_id) = 0 then
+            
+--Se evalua si el descuento aplica ya sea por fecha de ingreso o de vencimiento       
+            if descuento_liq.dec_ingreso is not null and producto.pro_ingreso < descuento_liq.dec_ingreso then
+              
+               insert into pv_desc_liquidacion(des_producto,des_descuento, des_estado)
+               values (producto.pro_id, descuento_liq.dec_id, 'A');
+               
+            elsif descuento_liq.dec_vencimiento is not null and producto.pro_vencimiento < descuento_liq.dec_vencimiento then
+              
+               insert into pv_desc_liquidacion(des_producto, des_descuento, des_estado)
+               values (producto.pro_id, descuento_liq.dec_id, 'A');
+               
+            end if;
+          end if;  
+        end loop;
+        commit;
+      exception
+--Si algo sale mal se realiza un rollback de los cambios realizados
+        when others then
+          rollback;  
+       end;
+    end if;
+
+end proc_liquidar_inventario;
+
+
+/
+
+create or replace noneditionable procedure PROC_APLICAR_DESCUENTOS_LIQUIDACION is
+
+     cursor sedes is select * from Pv_Sedes s where s.sede_estado = 'A';
+     inventarios_por_sede SYS_REFCURSOR;
+     invetario_aux pv_inventarios%rowtype;
+     
+begin
+
+--Se recorren las sedes  
+  for sede in sedes loop
+    
+    open inventarios_por_sede for select * from pv_inventarios i
+         where i.inv_sede = sede.sed_id and i.inv_estado = 'A' and i.inv_tipo = 'GON';
+
+--Por cada sede se recorren todos sus inventarios tipo Gondola
+    loop
+      fetch inventarios_por_sede into invetario_aux;
+      exit when inventarios_por_sede%notfound;
+      proc_liquidar_inventario(sede.sed_id, invetario_aux.inv_id);
+    end loop;
+    close inventarios_por_sede;
+        
+  end loop;
+end PROC_APLICAR_DESCUENTOS_LIQUIDACION;
+
+/
+
+declare
+         a number;
+begin
+  sys.dbms_job.submit(a,'PROC_APLICAR_DESCUENTOS_LIQUIDACION;', sysdate, 'SYSDATE + 7');
+  commit;
+end;
+
+/

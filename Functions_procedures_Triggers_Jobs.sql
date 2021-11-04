@@ -913,3 +913,150 @@ begin
 end;
 
 /
+
+
+
+---------------------------------notificaciones-----------------------------------
+
+
+create or replace noneditionable procedure PROC_NOTIFICAR_COORDINADOR_LIMITE(mensaje out varchar2) is
+cursor notCredito is select sum(cc.cue_saldo_pendiente) as total,c.cli_id,c.cli_cred_max,c.cli_email from PV_CUENTAS_COBRAR cc 
+       join PV_CLIENTES c on cc.cue_cliente=c.cli_id group by c.cli_id,c.cli_cred_max,c.cli_email;
+porcentaje number;
+res varchar2(100);
+clientes varchar2(100);
+
+begin
+  clientes:=' ';
+  
+  begin
+    for var in notCredito loop
+      porcentaje:=((var.cli_cred_max*85)/100);  --limite maximo 85% de las cuentas por cobrar
+      if(var.total>=porcentaje) then
+         clientes :=clientes ||', '|| var.cli_id;
+      end if;
+    end loop; 
+    
+    if clientes<>' ' then
+      mensaje:= 'Los clientes que cuentan con un 85% o más de su límite de crédito máximo son los siguientes, id'||clientes;
+      res := enviar_correo('cordobaangie98@gmail.com', 'Límite del crédito máximo de los clientes',mensaje );  --enviar correo al coordinador
+    end if;
+    
+  end;
+  
+end PROC_NOTIFICAR_COORDINADOR_LIMITE;
+/
+
+
+
+create or replace noneditionable procedure PROC_NOTIFICAR_LIMITE_CLIENTE(mensaje out varchar2) is
+cursor notCredito is select sum(cc.cue_saldo_pendiente) as total,c.cli_id,c.cli_cred_max,c.cli_email from PV_CUENTAS_COBRAR cc 
+       join PV_CLIENTES c on cc.cue_cliente=c.cli_id group by c.cli_id,c.cli_cred_max,c.cli_email;
+porcentaje number;
+res varchar2(100);
+begin
+  
+  begin
+    for var in notCredito loop
+      porcentaje:=((var.cli_cred_max*85)/100);  --85% del saldo permitido en cuentas por cobrar
+      if(var.total>=porcentaje) then
+         if(var.cli_email<>' ') then
+             mensaje:='Su crédito máximo ya casi llega al límite permitido, debe un total de '|| var.total;
+             res := enviar_correo(var.cli_email, 'Límite del crédito máximo',mensaje );
+         end if;
+      end if;
+    end loop; 
+  end;
+end PROC_NOTIFICAR_LIMITE_CLIENTE;
+/
+
+
+create or replace noneditionable procedure PROC_NOTIFICAR_LIMITE_PROVEEDORES(mensaje out varchar2) is
+cursor credito is select * from PV_LIMITE_CREDITO l join PV_PROVEEDORES p on l.lim_proveedor=p.pro_id;
+total float;
+porcentaje number;
+res varchar2(100);
+prov varchar2(100);
+
+begin
+  prov:=' ';
+  
+  begin
+    for var in credito loop
+      select sum(c.cue_monto) into total from PV_CUENTAS_PAGAR c where c.cue_proveedor=var.lim_proveedor;
+      porcentaje:=((var.lim_limite_max * 70)/100);  --70% del saldo permitido en cuentas por pagar
+      if(total>=porcentaje) then
+           prov:= prov||', ' || var.pro_id;
+           
+      end if;
+      
+      if prov <> ' ' then
+        mensaje:='El crédito máximo ya casi llega al límite permitido de cuentas por pagar de los siguientes proveedores, id'||prov;
+        res := enviar_correo('cordobaangie98@gmail.com', 'Límite del crédito máximo de cuentas por pagar',mensaje );   --notificar al gerente
+      end if;
+      
+    end loop;
+  end;
+  
+end PROC_NOTIFICAR_LIMITE_PROVEEDORES;
+/
+
+
+
+create or replace noneditionable procedure PROC_NOTIFICAR_PRODUCTOS_VENCIDOS(mensaje out varchar2) is
+cursor productos is select * from PV_PRODUCTOS p where p.pro_vencimiento <= sysdate;  --productos vencidos
+total float;
+res varchar2(100);
+precio float;
+product varchar2(100);
+
+begin
+  total:=0;
+  product:=' ';
+  begin
+    for var in productos loop
+      select p.pre_precio_costo into precio from PV_PRECIOS p where p.pre_estado='ACT' and p.pre_producto=var.pro_id;
+      total:=total+precio;
+      product:=product||', '||var.pro_id;
+    end loop;
+    
+    if product<> ' ' then
+      mensaje:='Lista de productos vencidos, id'||product|| ' , para un total de '||total;
+      res := enviar_correo('cordobaangie98@gmail.com', 'Lista de productos vencidos',mensaje );   --notificar al coordinador
+    end if;
+    
+  end;
+  
+end PROC_NOTIFICAR_PRODUCTOS_VENCIDOS;
+/
+
+
+create or replace noneditionable procedure PROC_NOTIFICAR_ULTIMO_PAGO(mensaje out varchar2) is
+cursor abonos is select distinct a.abov_fac_id,f.fac_cliente from PV_ABONOS_VENTAS a join PV_FACTURAS_VENTA f on a.abov_fac_id=f.fac_id where f.fac_estado='P'; 
+fecha date;
+res varchar2(100);
+client varchar2(100);
+begin
+  client:= ' ';
+  begin
+    
+    for var in abonos loop
+      select a.abov_fecha_abono into fecha from PV_ABONOS_VENTAS a
+         where a.abov_fecha_abono=(select max(v.abov_fecha_abono) from PV_ABONOS_VENTAS v where  v.abov_fac_id = var.abov_fac_id) ; --ultimo fecha del abono del cliente
+         
+      if(MONTHS_BETWEEN(sysdate,fecha)>1) then  --si el ultimo abono tiene mas de un mes
+         client:= client ||', ' ||var.fac_cliente;
+      end if;
+    end loop;
+    
+    if client<>' ' then
+      mensaje:='Los siguientes clientes tienen cuentas pendientes de pago y su último abono fue hace un mes o más, id'||client;
+      res := enviar_correo('cordobaangie98@gmail.com', 'Clientes morosos',mensaje );  --notificar al coordinador y al gerente
+    end if;
+  end;
+  
+end PROC_NOTIFICAR_ULTIMO_PAGO;
+/
+
+
+

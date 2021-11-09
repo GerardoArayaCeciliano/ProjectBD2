@@ -1,4 +1,4 @@
-/*
+﻿/*
 Created: 20/8/2021
 Modified: 31/10/2021
 Model: Punto_Venta
@@ -1235,17 +1235,41 @@ COMMENT ON COLUMN PV_BITACORA.bit_usuario IS 'Usuario que realiza la accion'
 -- Table PV_PARAMETROS
 
 CREATE TABLE PV_PARAMETROS(
+  par_rol Number,
   par_id Number NOT NULL,
+  par_usuario Varchar2(30 ) NOT NULL,
   par_contrasena Varchar2(160 ) NOT NULL,
-  par_usuario Varchar2(30 ),
+  par_correo Varchar2(60 ) NOT NULL,
   par_estado Varchar2(1 ) NOT NULL
         CONSTRAINT parametros_ck_estado CHECK (par_estado in ('A','I'))
 )
 ;
 
+-- Create indexes for table PV_PARAMETROS
+
+CREATE INDEX IX_Relationship1 ON PV_PARAMETROS (par_rol)
+;
+
 -- Add keys for table PV_PARAMETROS
 
 ALTER TABLE PV_PARAMETROS ADD CONSTRAINT PK_PV_PARAMETROS PRIMARY KEY (par_id)
+;
+
+-- Table PV_ROLES
+
+CREATE TABLE PV_ROLES(
+  rol_id Number NOT NULL,
+  rol_nombre Varchar2(60 ) NOT NULL,
+  rol_contrasenna Varchar2(120 ) NOT NULL
+)
+;
+
+-- Add keys for table PV_ROLES
+
+ALTER TABLE PV_ROLES ADD CONSTRAINT PK_PV_ROLES PRIMARY KEY (rol_id)
+;
+
+ALTER TABLE PV_ROLES ADD CONSTRAINT rol_nombre UNIQUE (rol_nombre)
 ;
 
 -- Trigger for sequence Sec_compania for column emp_id in table PV_COMPANIA ---------
@@ -1811,6 +1835,11 @@ ALTER TABLE PV_NOTAS_CRED ADD CONSTRAINT nota_credito_empresa FOREIGN KEY (not_e
 
 
 ALTER TABLE PV_DESCUENTOS ADD CONSTRAINT descuento_sede FOREIGN KEY (dec_sede) REFERENCES PV_SEDES (sed_id)
+;
+
+
+
+ALTER TABLE PV_PARAMETROS ADD CONSTRAINT roles_paramentros FOREIGN KEY (par_rol) REFERENCES PV_ROLES (rol_id)
 ;
 
 

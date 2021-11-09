@@ -1,6 +1,6 @@
 ﻿/*
 Created: 20/8/2021
-Modified: 31/10/2021
+Modified: 9/11/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -209,6 +209,14 @@ CREATE SEQUENCE Sec_biticora
 ;
 
 CREATE SEQUENCE Sec_parametros
+ INCREMENT BY 1
+ START WITH 1
+ NOMAXVALUE
+ NOMINVALUE
+ CACHE 20
+;
+
+CREATE SEQUENCE Sec_roles
  INCREMENT BY 1
  START WITH 1
  NOMAXVALUE
@@ -1633,6 +1641,20 @@ CREATE OR REPLACE TRIGGER tsu_PV_PARAMETROS_Sec_parametros AFTER UPDATE OF par_i
 ON PV_PARAMETROS FOR EACH ROW
 BEGIN
   RAISE_APPLICATION_ERROR(-20010,'Cannot update column par_id in table PV_PARAMETROS as it uses sequence.');
+END;
+/
+
+-- Trigger for sequence Sec_roles for column rol_id in table PV_ROLES ---------
+CREATE OR REPLACE TRIGGER ts_PV_ROLES_Sec_roles BEFORE INSERT
+ON PV_ROLES FOR EACH ROW
+BEGIN
+  :new.rol_id := Sec_roles.nextval;
+END;
+/
+CREATE OR REPLACE TRIGGER tsu_PV_ROLES_Sec_roles AFTER UPDATE OF rol_id
+ON PV_ROLES FOR EACH ROW
+BEGIN
+  RAISE_APPLICATION_ERROR(-20010,'Cannot update column rol_id in table PV_ROLES as it uses sequence.');
 END;
 /
 

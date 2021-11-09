@@ -1056,7 +1056,47 @@ begin
   end;
   
 end PROC_NOTIFICAR_ULTIMO_PAGO;
+
 /
 
+create or replace noneditionable function calcular_acciones_ganadas(factura_id in pv_facturas_venta.fac_id%type) return float is
 
+  cursor detalles is select * from pv_detall_fac_venta det where det.det_factura = factura_id;
+  promociones_producto SYS_REFCURSOR;
+  
+  factura pv_facturas_venta%rowtype;
+  acciones_totales float := 0;
+  prod_promo_aux pv_prod_promo%rowtype;
+  
+begin
+  begin
+    select * into factura from pv_facturas_venta f where f.fac_id = factura_id;
+    for det in detalles loop
+      
+      open promociones_producto for select pm.pro_producto, pm.pro_promocion, pm.pro_prod_accion
+      from pv_prod_promo pm join pv_promociones prom on prom.pro_id = pm.pro_promocion
+      where prom.pro_estado = 'A' and prom.pro_validez_hasta >= sysdate
+      and pm.pro_prod_accion is not null and pm.pro_prod_accion > 0
+      and pm.pro_producto = det.det_producto;
+      
+      loop
+         fetch promociones_producto into prod_promo_aux;
+         exit when promociones_producto%notfound;
+         
+         if det.det_unidades >= prod_promo_aux.pro_prod_accion then
+            acciones_totales := acciones_totales + round(det.det_unidades / prod_promo_aux.pro_prod_accion);
+         end if;
+      end loop;
+      
+      close promociones_producto;
+    end loop;
+    
+  exception
+    when NO_DATA_FOUND then
+      return -1;
+  end;
+  return acciones_totales;
+end calcular_acciones_ganadas;
+
+/
 

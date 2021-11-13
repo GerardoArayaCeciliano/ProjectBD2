@@ -1,6 +1,6 @@
 ﻿/*
 Created: 20/8/2021
-Modified: 9/11/2021
+Modified: 13/11/2021
 Model: Punto_Venta
 Database: Oracle 19c
 */
@@ -1255,7 +1255,7 @@ CREATE TABLE PV_PARAMETROS(
 
 -- Create indexes for table PV_PARAMETROS
 
-CREATE INDEX IX_Relationship1 ON PV_PARAMETROS (par_rol)
+CREATE INDEX parametros_idx_roles ON PV_PARAMETROS (par_rol)
 ;
 
 -- Add keys for table PV_PARAMETROS

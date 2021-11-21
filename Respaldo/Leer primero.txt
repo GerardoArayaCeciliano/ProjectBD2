@@ -1,0 +1,8 @@
+-------------------------------
+ingresar al sqlplus como sys
+create or replace directory backup_dir  as 'C:\respaldos\';
+grant exp_full_database, imp_full_database, MANAGE TABLESPACE TO rgerardo;
+
+
+--- en el cmd ---
+nada, lo hace el archibo bat 

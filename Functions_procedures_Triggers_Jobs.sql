@@ -1260,6 +1260,41 @@ end calcular_acciones_ganadas;
 
 /
 
+create or replace noneditionable procedure read_file is
+F UTL_FILE.FILE_TYPE;
+ V_LINE VARCHAR2 (1000);
+ V_CEDULA VARCHAR2(30);
+ V_NOMBRE VARCHAR2(120);
+ V_PAPELLIDO VARCHAR2(120);
+ V_SAPELLIDO VARCHAR2(120);
+begin
+  
+  F := UTL_FILE.FOPEN ('PADRON_DIR', 'PADRON_COMPLETO.TXT', 'R');
+  IF UTL_FILE.IS_OPEN(F) THEN
+  LOOP
+  BEGIN
+  UTL_FILE.GET_LINE(F, V_LINE, 1000);
+  IF V_LINE IS NULL THEN
+  EXIT;
+  END IF;
+  V_CEDULA := REGEXP_SUBSTR(V_LINE, '[^,]+', 1, 1);
+  V_NOMBRE := REGEXP_SUBSTR(V_LINE, '[^,]+', 1, 6);
+  V_PAPELLIDO := REGEXP_SUBSTR(V_LINE, '[^,]+', 1, 7);
+  V_SAPELLIDO := REGEXP_SUBSTR(V_LINE, '[^,]+', 1, 8);
+
+  INSERT INTO pv_padron (pad_nombre,pad_apellidos1,pad_apellidos2,pad_cedula) VALUES(V_NOMBRE, V_PAPELLIDO, V_SAPELLIDO, V_CEDULA);
+  COMMIT;
+--  vMensaje := 'DATA WAS SUCCESSFULLY INSERTED';--
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    EXIT;
+  END;
+ END LOOP;
+ END IF;
+ UTL_FILE.FCLOSE(F);
+end read_file;
+/
+
 
 -------jobs----------
 
